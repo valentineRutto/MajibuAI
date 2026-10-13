@@ -88,6 +88,7 @@ fun AskScreen(
             ),
         )
     }
+
     var draft by remember { mutableStateOf("") }
     var isAnswerSaved by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
