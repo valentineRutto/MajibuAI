@@ -28,6 +28,7 @@ private val bottomDestinations = listOf(
 
 @Composable
 fun MajibuBottomBar(navController: NavController) {
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
