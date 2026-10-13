@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
 import com.valentinerutto.majibuai.ui.theme.LavenderLight
+import com.valentinerutto.majibuai.ui.theme.MajibuShapes
 import com.valentinerutto.majibuai.ui.theme.MintDark
 import com.valentinerutto.majibuai.ui.theme.MintPrimary
 import com.valentinerutto.majibuai.ui.theme.PeachLight
@@ -117,7 +118,7 @@ fun LibraryScreen(
                     onClick = onAddQuestion,
                     modifier = Modifier
                         .size(38.dp)
-                        .clip(CircleShape),
+                        .clip(MajibuShapes.large),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
@@ -136,7 +137,7 @@ fun LibraryScreen(
                 leadingIcon = {
                     Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted)
                 },
-                shape = CircleShape,
+                shape = MajibuShapes.extraLarge,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MintPrimary,
                     unfocusedBorderColor = BorderLight,
@@ -158,7 +159,7 @@ fun LibraryScreen(
                         selected = selected,
                         onClick = { selectedTopic = topic },
                         label = { Text(topic) },
-                        shape = CircleShape,
+                        shape = MajibuShapes.large,
                         border = if (selected) null else BorderStroke(0.dp, Color.Transparent),
                         colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MintPrimary,
@@ -214,7 +215,7 @@ private fun SavedQuestionCard(question: SavedQuestion, onClick: () -> Unit) {
                 text = question.marker,
                 modifier = Modifier
                     .size(34.dp)
-                    .clip(CircleShape)
+                    .clip(MajibuShapes.extraLarge)
                     .background(question.markerColor)
                     .padding(7.dp),
                 color = MintDark,
