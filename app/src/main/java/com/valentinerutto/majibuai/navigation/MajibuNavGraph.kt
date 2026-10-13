@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.valentinerutto.majibuai.ui.ask.AskScreen
+import com.valentinerutto.majibuai.ui.library.LibraryScreen
 
 sealed class MajibuRoute(val route: String) {
     data object Ask : MajibuRoute("ask")
@@ -36,7 +37,7 @@ fun MajibuNavGraph(
         ) {
             composable(MajibuRoute.Ask.route) { AskScreen() }
             composable(MajibuRoute.Library.route) {
-                PlaceholderScreen(title = "Library")
+                LibraryScreen()
             }
             composable(MajibuRoute.Settings.route) {
                 PlaceholderScreen(title = "Settings")
