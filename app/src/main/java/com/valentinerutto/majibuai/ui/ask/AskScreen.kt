@@ -2,6 +2,7 @@ package com.valentinerutto.majibuai.ui.ask
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,10 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.valentinerutto.majibuai.R
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
 import com.valentinerutto.majibuai.ui.theme.CodeBackground
@@ -204,7 +208,7 @@ private fun AssistantMessage(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
     ) {
-        Avatar(emoji = "🤖", background = MintCard)
+        AssistantAvatar()
         Spacer(Modifier.width(10.dp))
         Column(
             modifier = Modifier
@@ -345,4 +349,16 @@ private fun Avatar(emoji: String, background: Color) {
     ) {
         Text(text = emoji, fontSize = 18.sp, textAlign = TextAlign.Center)
     }
+}
+
+@Composable
+private fun AssistantAvatar() {
+    Image(
+        painter = painterResource(R.drawable.majibu_robot),
+        contentDescription = "MajibuAI assistant",
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape),
+    )
 }
