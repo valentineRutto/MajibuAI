@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.valentinerutto.majibuai.ui.theme.MintDark
+import com.valentinerutto.majibuai.ui.theme.MintLight
 
 private data class BottomDestination(
     val route: String,
@@ -72,7 +74,11 @@ fun MajibuBottomBar(navController: NavController) {
                     )
                 },
                 label = { Text(destination.label) },
-                colors = NavigationBarItemDefaults.colors(),
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MintDark,
+                    selectedTextColor = MintDark,
+                    indicatorColor = MintLight,
+                ),
             )
         }
     }
