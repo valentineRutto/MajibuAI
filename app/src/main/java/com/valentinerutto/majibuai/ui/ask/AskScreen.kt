@@ -77,6 +77,7 @@ fun AskScreen(
     onSaveAnswer: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+
     val messages = remember {
         mutableStateListOf(
             ChatMessage("What is Kotlin Flow?", fromAssistant = false),
