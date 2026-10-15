@@ -8,13 +8,19 @@ class AiRepository() {
 
         delay(800)
 
-        return """
-            Here's a simple explanation of "$question".
+        return when {
+            question.contains("flow", ignoreCase = true) ->
+                "Kotlin Flow helps you handle data that " +
+                        "changes over time, such as streaming AI responses."
 
-            This is a simulated response.
+            question.contains("compose", ignoreCase = true) ->
+                "Jetpack Compose is Android's modern " +
+                        "declarative UI toolkit."
 
-            In the next codelab step, we'll
-            connect MajibuAI to a real AI model.
-        """.trimIndent()
+            else ->
+                "Great question! Here's a simple explanation " +
+                        "of \"$question\". This is a demo response."
+        }
+
     }
 }
