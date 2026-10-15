@@ -12,6 +12,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 data class AskUiState(
     val question: String = "",
+    val submittedQuestion: String? = null,
     val answer: String = "",
     val isLoading: Boolean = false,
     val error: String? = null
@@ -40,6 +41,8 @@ class MajibuViewModel(
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
+                    question = "",
+                    submittedQuestion = question,
                     isLoading = true,
                     answer = "",
                     error = null

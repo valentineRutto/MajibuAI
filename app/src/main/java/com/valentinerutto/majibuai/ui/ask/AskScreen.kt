@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -27,6 +25,7 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +34,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,52 +47,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
+import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
-import com.valentinerutto.majibuai.ui.theme.CodeBackground
-import com.valentinerutto.majibuai.ui.theme.CodeText
 import com.valentinerutto.majibuai.ui.theme.LavenderLight
 import com.valentinerutto.majibuai.ui.theme.LavenderAccent
 import com.valentinerutto.majibuai.ui.theme.MajibuShapes
 import com.valentinerutto.majibuai.ui.theme.MintCard
-import com.valentinerutto.majibuai.ui.theme.MintDark
 import com.valentinerutto.majibuai.ui.theme.MintPrimary
 import com.valentinerutto.majibuai.ui.theme.SurfaceSoft
 import com.valentinerutto.majibuai.ui.theme.TextMuted
 import com.valentinerutto.majibuai.ui.theme.TextPrimary
 import com.valentinerutto.majibuai.ui.theme.TextSecondary
-
-private data class ChatMessage(
-    val text: String,
-    val fromAssistant: Boolean,
-    val showCodeSample: Boolean = false,
-)
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AskScreen(
+    viewModel: MajibuViewModel = koinViewModel(),
     onBackClick: () -> Unit = {},
     onSaveAnswer: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val messages = remember {
-        mutableStateListOf(
-            ChatMessage("What is Kotlin Flow?", fromAssistant = false),
-            ChatMessage(
-                text = "Kotlin Flow is a coroutine-based API for handling asynchronous streams of data.\n\nIt lets you work with data that arrives over time, such as from a network, database, or user input. Flow is cancelable, lifecycle-aware, and works great with Jetpack Compose.",
-                fromAssistant = true,
-                showCodeSample = true,
-            ),
-        )
-    }
-
-    var draft by remember { mutableStateOf("") }
-    var isAnswerSaved by remember { mutableStateOf(false) }
+    var savedAnswer by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+    val itemCount = (if (uiState.submittedQuestion != null) 1 else 0) +
+        (if (uiState.isLoading) 1 else 0) +
+        (if (uiState.answer.isNotBlank()) 1 else 0) +
+        (if (uiState.error != null) 1 else 0)
+
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
     }
 
     Column(
@@ -115,40 +102,40 @@ fun AskScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            itemsIndexed(messages) { index, message ->
-                if (message.fromAssistant) {
+
+            uiState.submittedQuestion?.let { question ->
+                item(key = "question") { UserMessage(question) }
+            }
+            if (uiState.isLoading) {
+                item(key = "loading") { LoadingMessage() }
+            }
+            if (uiState.answer.isNotBlank()) {
+                item(key = "answer") {
                     AssistantMessage(
-                        message = message,
-                        showSaveAction = index == messages.lastIndex,
-                        isSaved = isAnswerSaved,
+                        answer = uiState.answer,
+                        showSaveAction = true,
+                        isSaved = savedAnswer == uiState.answer,
                         onSave = {
-                            isAnswerSaved = !isAnswerSaved
-                            if (isAnswerSaved) onSaveAnswer(message.text)
+                            if (savedAnswer == uiState.answer) {
+                                savedAnswer = null
+                            } else {
+                                savedAnswer = uiState.answer
+                                onSaveAnswer(uiState.answer)
+                            }
                         },
                     )
-                } else {
-                    UserMessage(message.text)
                 }
+            }
+            uiState.error?.let { error ->
+                item(key = "error") { ErrorMessage(error) }
             }
         }
 
         MessageComposer(
-            value = draft,
-            onValueChange = { draft = it },
-            onSend = {
-                val question = draft.trim()
-                if (question.isNotEmpty()) {
-                    messages.add(ChatMessage(question, fromAssistant = false))
-                    messages.add(
-                        ChatMessage(
-                            text = "I can help you explore $question. Ask a follow-up or tell me which part you would like explained.",
-                            fromAssistant = true,
-                        ),
-                    )
-                    draft = ""
-                    isAnswerSaved = false
-                }
-            },
+            value = uiState.question,
+            enabled = !uiState.isLoading,
+            onValueChange = viewModel::onQuestionChange,
+            onSend = viewModel::ask,
         )
     }
 }
@@ -201,7 +188,7 @@ private fun UserMessage(text: String) {
 
 @Composable
 private fun AssistantMessage(
-    message: ChatMessage,
+    answer: String,
     showSaveAction: Boolean,
     isSaved: Boolean,
     onSave: () -> Unit,
@@ -228,15 +215,11 @@ private fun AssistantMessage(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = message.text,
+                    text = answer,
                     color = TextPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 21.sp,
                 )
-            }
-            if (message.showCodeSample) {
-                Spacer(Modifier.height(12.dp))
-                CodeExampleCard()
             }
             if (showSaveAction) {
                 Spacer(Modifier.height(12.dp))
@@ -263,38 +246,47 @@ private fun AssistantMessage(
 }
 
 @Composable
-private fun CodeExampleCard() {
-    Column(
+private fun LoadingMessage() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AssistantAvatar()
+        Spacer(Modifier.width(10.dp))
+        Row(
+            modifier = Modifier
+                .clip(shape = MajibuShapes.extraLarge)
+                .background(MintCard)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                color = MintPrimary,
+                strokeWidth = 2.dp,
+            )
+            Spacer(Modifier.width(10.dp))
+            Text("Thinking...", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessage(error: String) {
+    Text(
+        text = error,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
-            .padding(10.dp),
-    ) {
-        Text(
-            text = "Quick example:",
-            style = MaterialTheme.typography.labelMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "flow {\n    emit(\"Hello\")\n    delay(1000)\n    emit(\"World\")\n}",
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(9.dp))
-                .background(CodeBackground)
-                .padding(10.dp),
-            color = CodeText,
-            fontSize = 12.sp,
-            lineHeight = 17.sp,
-        )
-    }
+            .padding(start = 44.dp, end = 8.dp),
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodyMedium,
+    )
 }
 
 @Composable
 private fun MessageComposer(
     value: String,
+    enabled: Boolean,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
 ) {
@@ -324,6 +316,7 @@ private fun MessageComposer(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = TextPrimary),
                     singleLine = true,
+                    enabled = enabled,
                 )
             }
             IconButton(
@@ -332,7 +325,7 @@ private fun MessageComposer(
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(MintPrimary),
-                enabled = value.isNotBlank(),
+                enabled = enabled && value.isNotBlank(),
             ) {
                 Icon(Icons.Filled.Send, contentDescription = "Send question", tint = Color.White)
             }
