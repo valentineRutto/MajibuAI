@@ -18,12 +18,32 @@ data class AskUiState(
     val error: String? = null
 )
 
+data class SavedQuestion(
+    val question: String,
+    val answer: String,
+    val savedAt: Long = System.currentTimeMillis()
+)
+
 class MajibuViewModel(
     private val repository: AiRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AskUiState())
     val uiState = _uiState.asStateFlow()
+
+    private val _savedQuestions = MutableStateFlow<List<SavedQuestion>>(emptyList())
+    val savedQuestions = _savedQuestions.asStateFlow()
+
+    fun saveCurrentAnswer() {
+        val state = _uiState.value
+        val question = state.submittedQuestion?.takeIf { it.isNotBlank() } ?: return
+        val answer = state.answer.takeIf { it.isNotBlank() } ?: return
+
+        _savedQuestions.update { saved ->
+            if (saved.any { it.question == question && it.answer == answer }) saved
+            else listOf(SavedQuestion(question, answer)) + saved
+        }
+    }
 
     fun onQuestionChange(value: String) {
         _uiState.update {

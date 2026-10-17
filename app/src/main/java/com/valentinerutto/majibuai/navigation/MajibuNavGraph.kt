@@ -6,12 +6,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
+import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.ask.AskScreen
 import com.valentinerutto.majibuai.ui.library.LibraryScreen
 
@@ -32,15 +37,29 @@ fun MajibuNavGraph(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = MajibuRoute.Ask.route,
+            startDestination = "root",
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(MajibuRoute.Ask.route) { AskScreen() }
-            composable(MajibuRoute.Library.route) {
-                LibraryScreen()
-            }
-            composable(MajibuRoute.Settings.route) {
-                PlaceholderScreen(title = "Settings")
+            navigation(startDestination = MajibuRoute.Ask.route, route = "root") {
+                composable(MajibuRoute.Ask.route) { backStackEntry ->
+                    val parentEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry("root")
+                    }
+                    val viewModel: MajibuViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+                    AskScreen(viewModel = viewModel)
+                }
+                composable(MajibuRoute.Library.route) { backStackEntry ->
+                    val parentEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry("root")
+                    }
+                    val viewModel: MajibuViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+                    LibraryScreen(
+                        savedQuestions = viewModel.savedQuestions.collectAsStateWithLifecycle().value,
+                    )
+                }
+                composable(MajibuRoute.Settings.route) {
+                    PlaceholderScreen(title = "Settings")
+                }
             }
         }
     }
