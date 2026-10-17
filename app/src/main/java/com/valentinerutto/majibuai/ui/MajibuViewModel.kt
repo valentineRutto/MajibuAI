@@ -12,10 +12,14 @@ import kotlin.coroutines.cancellation.CancellationException
 
 data class AskUiState(
     val question: String = "",
-    val submittedQuestion: String? = null,
-    val answer: String = "",
+    val conversation: List<AskExchange> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
+)
+
+data class AskExchange(
+    val question: String,
+    val answer: String = ""
 )
 
 data class SavedQuestion(
@@ -35,10 +39,12 @@ class MajibuViewModel(
     val savedQuestions = _savedQuestions.asStateFlow()
 
     fun saveCurrentAnswer() {
-        val state = _uiState.value
-        val question = state.submittedQuestion?.takeIf { it.isNotBlank() } ?: return
-        val answer = state.answer.takeIf { it.isNotBlank() } ?: return
+        val exchange = _uiState.value.conversation.lastOrNull() ?: return
+        saveAnswer(exchange.question, exchange.answer)
+    }
 
+    fun saveAnswer(question: String, answer: String) {
+        if (question.isBlank() || answer.isBlank()) return
         _savedQuestions.update { saved ->
             if (saved.any { it.question == question && it.answer == answer }) saved
             else listOf(SavedQuestion(question, answer)) + saved
@@ -62,9 +68,8 @@ class MajibuViewModel(
             _uiState.update {
                 it.copy(
                     question = "",
-                    submittedQuestion = question,
+                    conversation = it.conversation + AskExchange(question),
                     isLoading = true,
-                    answer = "",
                     error = null
                 )
             }
@@ -73,7 +78,9 @@ class MajibuViewModel(
                 val answer = repository.explain(question)
 
                 _uiState.update {
-                    it.copy(answer = answer)
+                    it.copy(
+                        conversation = it.conversation.dropLast(1) + it.conversation.last().copy(answer = answer)
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e
