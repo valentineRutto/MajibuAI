@@ -55,24 +55,11 @@ import com.valentinerutto.majibuai.ui.theme.TextMuted
 import com.valentinerutto.majibuai.ui.theme.TextPrimary
 import com.valentinerutto.majibuai.ui.theme.TextSecondary
 import com.valentinerutto.majibuai.ui.theme.YellowLight
-
-private data class SavedQuestion(
-    val title: String,
-    val date: String,
-    val topic: String,
-    val marker: String,
-    val markerColor: Color,
-)
-
-private val savedQuestions = listOf(
-    SavedQuestion("What is Kotlin Flow?", "Apr 25, 2025", "Android", "🌺", PeachLight),
-    SavedQuestion("Difference between StateFlow and SharedFlow", "Apr 24, 2025", "Kotlin", "🧡", PeachLight),
-    SavedQuestion("How does Jetpack Compose handle state?", "Apr 22, 2025", "Compose", "◉", LavenderLight),
-    SavedQuestion("What is the purpose of Hilt?", "Apr 20, 2025", "Android", "✦", YellowLight),
-)
+import com.valentinerutto.majibuai.ui.SavedQuestion as SavedQuestionData
 
 @Composable
 fun LibraryScreen(
+    savedQuestions: List<SavedQuestionData> = emptyList(),
     onAddQuestion: () -> Unit = {},
     onQuestionClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -81,8 +68,8 @@ fun LibraryScreen(
     var selectedTopic by remember { mutableStateOf("All") }
     val topics = listOf("All", "Android", "Kotlin", "AI", "Compose")
     val filteredQuestions = savedQuestions.filter { question ->
-        val matchesQuery = question.title.contains(query, ignoreCase = true)
-        val matchesTopic = selectedTopic == "All" || question.topic == selectedTopic
+        val matchesQuery = question.question.contains(query, ignoreCase = true)
+        val matchesTopic = selectedTopic == "All"
         matchesQuery && matchesTopic
     }
 
@@ -177,7 +164,7 @@ fun LibraryScreen(
             ) {
                 items(filteredQuestions) { question ->
                     SavedQuestionCard(question = question) {
-                        onQuestionClick(question.title)
+                        onQuestionClick(question.question)
                     }
                 }
                 if (filteredQuestions.isEmpty()) {
@@ -197,7 +184,7 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun SavedQuestionCard(question: SavedQuestion, onClick: () -> Unit) {
+private fun SavedQuestionCard(question: SavedQuestionData, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -212,11 +199,11 @@ private fun SavedQuestionCard(question: SavedQuestion, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = question.marker,
+                text = "✦",
                 modifier = Modifier
                     .size(34.dp)
                     .clip(MajibuShapes.extraLarge)
-                    .background(question.markerColor)
+                    .background(LavenderLight)
                     .padding(7.dp),
                 color = MintDark,
             )
@@ -226,7 +213,7 @@ private fun SavedQuestionCard(question: SavedQuestion, onClick: () -> Unit) {
                     .padding(start = 10.dp, end = 8.dp),
             ) {
                 Text(
-                    text = question.title,
+                    text = question.question,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = TextPrimary,
@@ -234,7 +221,7 @@ private fun SavedQuestionCard(question: SavedQuestion, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${question.date} · ${question.topic}",
+                    text = "Saved ${java.text.DateFormat.getDateInstance().format(java.util.Date(question.savedAt))}",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
                     modifier = Modifier.padding(top = 4.dp),

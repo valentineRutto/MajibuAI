@@ -72,7 +72,7 @@ fun AskScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var savedAnswer by remember { mutableStateOf<String?>(null) }
+    val savedQuestions by viewModel.savedQuestions.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     val itemCount = (if (uiState.submittedQuestion != null) 1 else 0) +
@@ -114,14 +114,12 @@ fun AskScreen(
                     AssistantMessage(
                         answer = uiState.answer,
                         showSaveAction = true,
-                        isSaved = savedAnswer == uiState.answer,
+                        isSaved = savedQuestions.any {
+                            it.question == uiState.submittedQuestion && it.answer == uiState.answer
+                        },
                         onSave = {
-                            if (savedAnswer == uiState.answer) {
-                                savedAnswer = null
-                            } else {
-                                savedAnswer = uiState.answer
-                                onSaveAnswer(uiState.answer)
-                            }
+                            viewModel.saveCurrentAnswer()
+                            onSaveAnswer(uiState.answer)
                         },
                     )
                 }
