@@ -75,10 +75,8 @@ fun AskScreen(
     val savedQuestions by viewModel.savedQuestions.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    val itemCount = (if (uiState.submittedQuestion != null) 1 else 0) +
-        (if (uiState.isLoading) 1 else 0) +
-        (if (uiState.answer.isNotBlank()) 1 else 0) +
-        (if (uiState.error != null) 1 else 0)
+    val itemCount = uiState.conversation.sumOf { 1 + if (it.answer.isNotBlank()) 1 else 0 } +
+        (if (uiState.isLoading) 1 else 0) + (if (uiState.error != null) 1 else 0)
 
     LaunchedEffect(itemCount) {
         if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
@@ -103,26 +101,26 @@ fun AskScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
 
-            uiState.submittedQuestion?.let { question ->
-                item(key = "question") { UserMessage(question) }
+            uiState.conversation.forEachIndexed { index, exchange ->
+                item(key = "question-$index") { UserMessage(exchange.question) }
+                if (exchange.answer.isNotBlank()) {
+                    item(key = "answer-$index") {
+                        AssistantMessage(
+                            answer = exchange.answer,
+                            showSaveAction = true,
+                            isSaved = savedQuestions.any {
+                                it.question == exchange.question && it.answer == exchange.answer
+                            },
+                            onSave = {
+                                viewModel.saveAnswer(exchange.question, exchange.answer)
+                                onSaveAnswer(exchange.answer)
+                            },
+                        )
+                    }
+                }
             }
             if (uiState.isLoading) {
                 item(key = "loading") { LoadingMessage() }
-            }
-            if (uiState.answer.isNotBlank()) {
-                item(key = "answer") {
-                    AssistantMessage(
-                        answer = uiState.answer,
-                        showSaveAction = true,
-                        isSaved = savedQuestions.any {
-                            it.question == uiState.submittedQuestion && it.answer == uiState.answer
-                        },
-                        onSave = {
-                            viewModel.saveCurrentAnswer()
-                            onSaveAnswer(uiState.answer)
-                        },
-                    )
-                }
             }
             uiState.error?.let { error ->
                 item(key = "error") { ErrorMessage(error) }

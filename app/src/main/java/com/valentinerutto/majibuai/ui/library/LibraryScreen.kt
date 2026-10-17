@@ -68,8 +68,15 @@ fun LibraryScreen(
     var selectedTopic by remember { mutableStateOf("All") }
     val topics = listOf("All", "Android", "Kotlin", "AI", "Compose")
     val filteredQuestions = savedQuestions.filter { question ->
-        val matchesQuery = question.question.contains(query, ignoreCase = true)
-        val matchesTopic = selectedTopic == "All"
+
+
+        val matchesQuery = query.isBlank() ||
+            question.question.contains(query.trim(), ignoreCase = true) ||
+            question.answer.contains(query.trim(), ignoreCase = true)
+
+        val matchesTopic = selectedTopic == "All" ||
+            question.question.contains(selectedTopic, ignoreCase = true) ||
+            question.answer.contains(selectedTopic, ignoreCase = true)
         matchesQuery && matchesTopic
     }
 
