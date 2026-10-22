@@ -195,15 +195,15 @@ Verify that:
 
 After exploring the starter project, continue through the codelab checkpoints.
 
-| Branch | Focus |
-|---|---|
+| Branch | Focus                                             |
+|---|---------------------------------------------------|
 | `00-starter` | Compose UI, MVVM, Koin, repository, saved answers |
-| `01-cloud-ai` | Cloud AI integration |
-| `02-streaming` | Streaming responses with Kotlin Flow |
-| `03-save-for-later` | Improve or extend saved-answer persistence |
-| `04-on-device-ai` | On-device AI inference |
-| `05-hybrid-ai` | Cloud and local AI routing |
-| `06-final` | Final application and polish |
+| `01-cloud-ai` | Cloud AI integration Firebase + Gemini            |
+| `02-streaming` | Streaming responses with Kotlin Flow              |
+| `03-save-for-later` | Improve or extend saved-answer persistence        |
+| `04-on-device-ai` | On-device AI inference                            |
+| `05-hybrid-ai` | Cloud and local AI routing                        |
+| `06-final` | Final application and polish                      |
 
 ## 10. Ready to Build!
 
