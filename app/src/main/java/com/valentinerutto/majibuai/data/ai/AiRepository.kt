@@ -2,7 +2,7 @@ package com.valentinerutto.majibuai.data.ai
 
 import kotlinx.coroutines.delay
 
-class AiRepository() {
+class AiRepository(private val firebaseengine: FirebaseGeminiAIEngine) {
 
     suspend fun explain(question: String): String {
 
