@@ -22,7 +22,15 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
             isMinifyEnabled = false
+            isTestCoverageEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -33,8 +41,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -54,7 +64,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
-    // implementation(libs.firebase.appcheck.debug)
+    implementation(libs.firebase.appcheck.debug)
+    implementation(libs.firebase.appcheck.playintegrity)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

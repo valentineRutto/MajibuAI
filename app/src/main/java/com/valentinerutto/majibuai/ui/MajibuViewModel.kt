@@ -58,6 +58,7 @@ class MajibuViewModel(
     }
 
     fun ask() {
+
         val question = _uiState.value.question.trim()
 
         if (question.isBlank() || _uiState.value.isLoading) {
@@ -75,6 +76,7 @@ class MajibuViewModel(
             }
 
             try {
+
                 val answer = repository.explain(question)
 
                 _uiState.update {
@@ -82,6 +84,7 @@ class MajibuViewModel(
                         conversation = it.conversation.dropLast(1) + it.conversation.last().copy(answer = answer)
                     )
                 }
+
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
