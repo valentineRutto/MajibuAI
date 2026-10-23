@@ -3,6 +3,8 @@ package com.valentinerutto.majibuai.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.valentinerutto.majibuai.data.ai.AiRepository
+import com.valentinerutto.majibuai.data.ai.ChatMessage
+import com.valentinerutto.majibuai.data.ai.ChatRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -12,14 +14,9 @@ import kotlin.coroutines.cancellation.CancellationException
 
 data class AskUiState(
     val question: String = "",
-    val conversation: List<AskExchange> = emptyList(),
+    val conversation: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
-)
-
-data class AskExchange(
-    val question: String,
-    val answer: String = ""
 )
 
 data class SavedQuestion(
@@ -40,15 +37,18 @@ class MajibuViewModel(
 
     fun saveCurrentAnswer() {
         val exchange = _uiState.value.conversation.lastOrNull() ?: return
-        saveAnswer(exchange.question, exchange.answer)
+      //  saveAnswer(exchange.question, exchange.answer)
     }
 
     fun saveAnswer(question: String, answer: String) {
+
         if (question.isBlank() || answer.isBlank()) return
+
         _savedQuestions.update { saved ->
             if (saved.any { it.question == question && it.answer == answer }) saved
             else listOf(SavedQuestion(question, answer)) + saved
         }
+
     }
 
     fun onQuestionChange(value: String) {
@@ -61,19 +61,20 @@ class MajibuViewModel(
 
         val question = _uiState.value.question.trim()
 
-        if (question.isBlank() || _uiState.value.isLoading) {
-            return
-        }
+        if (question.isBlank() || _uiState.value.isLoading) return
 
-        viewModelScope.launch {
+val updatedMessages = _uiState.value.conversation + ChatMessage(role = ChatRole.USER, content = question)
+
             _uiState.update {
                 it.copy(
                     question = "",
-                    conversation = it.conversation + AskExchange(question),
+                    conversation = updatedMessages,
                     isLoading = true,
                     error = null
                 )
             }
+
+        viewModelScope.launch {
 
             try {
 
@@ -81,7 +82,7 @@ class MajibuViewModel(
 
                 _uiState.update {
                     it.copy(
-                        conversation = it.conversation.dropLast(1) + it.conversation.last().copy(answer = answer)
+                        conversation = it.conversation + ChatMessage(role = ChatRole.ASSISTANT, content = answer)
                     )
                 }
 
