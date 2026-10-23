@@ -5,7 +5,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.ai.type.content
-import com.google.gson.GsonBuilder
 
 interface FirebaseGeminiAIEngine {
     suspend fun generate(request: AiChatRequest): AiChatResponse

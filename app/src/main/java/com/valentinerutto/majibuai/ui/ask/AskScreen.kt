@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,11 +56,16 @@ import com.valentinerutto.majibuai.ui.theme.LavenderLight
 import com.valentinerutto.majibuai.ui.theme.LavenderAccent
 import com.valentinerutto.majibuai.ui.theme.MajibuShapes
 import com.valentinerutto.majibuai.ui.theme.MintCard
+import com.valentinerutto.majibuai.ui.theme.MintDark
+import com.valentinerutto.majibuai.ui.theme.MintLight
 import com.valentinerutto.majibuai.ui.theme.MintPrimary
 import com.valentinerutto.majibuai.ui.theme.SurfaceSoft
 import com.valentinerutto.majibuai.ui.theme.TextMuted
 import com.valentinerutto.majibuai.ui.theme.TextPrimary
 import com.valentinerutto.majibuai.ui.theme.TextSecondary
+import com.valentinerutto.orbmotion.orbs.AnimatedThinkingOrb
+import com.valentinerutto.orbmotion.orbs.OrbSize
+import com.valentinerutto.orbmotion.orbs.OrbState
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -76,13 +80,6 @@ fun AskScreen(
     val savedQuestions by viewModel.savedQuestions.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    val itemCount = uiState.conversation.size +
-        (if (uiState.isLoading) 1 else 0) +
-        (if (uiState.error != null) 1 else 0)
-
-    LaunchedEffect(itemCount) {
-        if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
-    }
 
     Column(
         modifier = modifier
@@ -90,7 +87,6 @@ fun AskScreen(
             .background(AppBackground),
     ) {
         AskTopBar(onBackClick = onBackClick)
-
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -102,7 +98,6 @@ fun AskScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-
 
             uiState.conversation.forEachIndexed { index, message ->
 
@@ -276,12 +271,17 @@ private fun LoadingMessage() {
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                color = MintPrimary,
-                strokeWidth = 2.dp,
+
+            AnimatedThinkingOrb(
+                modifier = Modifier.size(24.dp),
+                state = OrbState.SHAPING,
+                size = OrbSize.Custom(64.dp).floatValue,
+                speed = 1f,
+                color = MintDark,
             )
+
             Spacer(Modifier.width(10.dp))
+
             Text("Thinking...", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
         }
     }
