@@ -1,6 +1,5 @@
 package com.valentinerutto.majibuai.data.ai
 
-import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
