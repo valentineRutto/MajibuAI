@@ -1,4 +1,4 @@
-package com.valentinerutto.majibuai.data
+package com.valentinerutto.majibuai.data.ai
 
 import kotlinx.coroutines.delay
 
