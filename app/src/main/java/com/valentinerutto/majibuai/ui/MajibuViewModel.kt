@@ -59,38 +59,51 @@ class MajibuViewModel(
 
     fun ask() {
 
+        val currentState = _uiState.value
+
         val question = _uiState.value.question.trim()
 
-        if (question.isBlank() || _uiState.value.isLoading) return
+        if (question.isBlank() || currentState.isLoading) return
 
-val updatedMessages = _uiState.value.conversation + ChatMessage(role = ChatRole.USER, content = question)
+        val userMessage = ChatMessage(
+            role = ChatRole.USER,
+            content = question,
+        )
 
-            _uiState.update {
-                it.copy(
-                    question = "",
-                    conversation = updatedMessages,
-                    isLoading = true,
-                    error = null
-                )
-            }
+        val requestMessages = currentState.conversation + userMessage
+
+        _uiState.update {
+            it.copy(
+                question = "",
+                conversation = requestMessages,
+                isLoading = true,
+                error = null,
+            )
+        }
 
         viewModelScope.launch {
-
             try {
-
-                val answer = repository.explain(question)
+                val answer = repository.explain(requestMessages)
 
                 _uiState.update {
                     it.copy(
-                        conversation = it.conversation + ChatMessage(role = ChatRole.ASSISTANT, content = answer)
+                        conversation = it.conversation + ChatMessage(
+                            role = ChatRole.ASSISTANT,
+                            content = answer,
+                        ),
                     )
                 }
-
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(error = e.message ?: "Something went wrong")
+                _uiState.update { state ->
+                    state.copy(
+                        question = question,
+                        conversation = state.conversation.filterNot {
+                            it.id == userMessage.id
+                        },
+                        error = e.message ?: "Something went wrong. Please try again.",
+                    )
                 }
             } finally {
                 _uiState.update {

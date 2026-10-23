@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
+import com.valentinerutto.majibuai.data.ai.ChatRole
 import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
@@ -75,8 +76,9 @@ fun AskScreen(
     val savedQuestions by viewModel.savedQuestions.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    val itemCount = uiState.conversation.sumOf { 1 + if (it.answer.isNotBlank()) 1 else 0 } +
-        (if (uiState.isLoading) 1 else 0) + (if (uiState.error != null) 1 else 0)
+    val itemCount = uiState.conversation.size +
+        (if (uiState.isLoading) 1 else 0) +
+        (if (uiState.error != null) 1 else 0)
 
     LaunchedEffect(itemCount) {
         if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
@@ -101,24 +103,42 @@ fun AskScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
 
-            uiState.conversation.forEachIndexed { index, exchange ->
-                item(key = "question-$index") { UserMessage(exchange.question) }
-                if (exchange.answer.isNotBlank()) {
-                    item(key = "answer-$index") {
-                        AssistantMessage(
-                            answer = exchange.answer,
-                            showSaveAction = true,
-                            isSaved = savedQuestions.any {
-                                it.question == exchange.question && it.answer == exchange.answer
-                            },
-                            onSave = {
-                                viewModel.saveAnswer(exchange.question, exchange.answer)
-                                onSaveAnswer(exchange.answer)
-                            },
-                        )
+
+            uiState.conversation.forEachIndexed { index, message ->
+
+                item(key = message.id) {
+
+                    when (message.role) {
+
+                        ChatRole.USER -> UserMessage(message.content)
+
+                        ChatRole.ASSISTANT -> {
+                            val question = uiState.conversation
+                                .take(index)
+                                .lastOrNull { it.role == ChatRole.USER }
+                                ?.content
+                                .orEmpty()
+
+                            AssistantMessage(
+                                answer = message.content,
+                                showSaveAction = question.isNotBlank(),
+                                isSaved = savedQuestions.any {
+                                    it.question == question && it.answer == message.content
+                                },
+                                onSave = {
+                                    if (question.isNotBlank()) {
+                                        viewModel.saveAnswer(question, message.content)
+                                        onSaveAnswer(message.content)
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
+
+
+
             if (uiState.isLoading) {
                 item(key = "loading") { LoadingMessage() }
             }
@@ -296,7 +316,7 @@ private fun MessageComposer(
         Row(
             modifier = Modifier
                 .weight(1f)
-             .clip(shape = MajibuShapes.large)
+                .clip(shape = MajibuShapes.large)
                 .background(Color.White)
                 .border(1.dp, BorderLight, CircleShape)
                 .padding(start = 16.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
