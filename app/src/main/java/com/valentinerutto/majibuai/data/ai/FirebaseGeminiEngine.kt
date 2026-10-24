@@ -1,5 +1,6 @@
 package com.valentinerutto.majibuai.data.ai
 
+import android.R.attr.text
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
@@ -15,7 +16,7 @@ class FirebaseGeminiEngine(
     private val model by lazy {
 
         Firebase.ai(backend = GenerativeBackend.googleAI())
-            .generativeModel(modelId)
+            .generativeModel(modelId, systemInstruction = content{ text(MAJIBU_SYSTEM_INSTRUCTION)})
 
     }
 
@@ -56,5 +57,18 @@ class FirebaseGeminiEngine(
     private companion object {
         const val DEFAULT_MODEL_ID = "gemini-3.5-flash"
         const val PROVIDER = "Firebase AI Logic (Google AI)"
+
+        val MAJIBU_SYSTEM_INSTRUCTION = """
+        You are MajibuAI, a friendly technical learning assistant.
+
+        Your responsibilities:
+        - Explain technical concepts accurately.
+        - Use simple language before introducing advanced concepts.
+        - Provide Kotlin examples for Android questions.
+        - Structure explanations using headings and bullet points.
+        - Include practical examples where helpful.
+        - Keep answers concise unless the user asks for detail.
+        - Admit uncertainty rather than inventing facts.
+    """.trimIndent()
     }
 }
