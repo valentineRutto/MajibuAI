@@ -31,11 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,8 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
-import com.valentinerutto.majibuai.data.ai.ChatRole
-import com.valentinerutto.majibuai.data.ai.toDisplayMessage
+import com.valentinerutto.majibuai.data.ai.models.ChatRole
+import com.valentinerutto.majibuai.data.ai.models.toDisplayMessage
 import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
@@ -58,7 +54,6 @@ import com.valentinerutto.majibuai.ui.theme.LavenderAccent
 import com.valentinerutto.majibuai.ui.theme.MajibuShapes
 import com.valentinerutto.majibuai.ui.theme.MintCard
 import com.valentinerutto.majibuai.ui.theme.MintDark
-import com.valentinerutto.majibuai.ui.theme.MintLight
 import com.valentinerutto.majibuai.ui.theme.MintPrimary
 import com.valentinerutto.majibuai.ui.theme.SurfaceSoft
 import com.valentinerutto.majibuai.ui.theme.TextMuted

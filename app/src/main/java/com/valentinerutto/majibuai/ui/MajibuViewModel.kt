@@ -2,12 +2,11 @@ package com.valentinerutto.majibuai.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.valentinerutto.majibuai.data.ai.AiError
+import com.valentinerutto.majibuai.data.ai.models.AiError
 import com.valentinerutto.majibuai.data.ai.AiRepository
-import com.valentinerutto.majibuai.data.ai.AiResult
-import com.valentinerutto.majibuai.data.ai.ChatMessage
-import com.valentinerutto.majibuai.data.ai.ChatRole
-import com.valentinerutto.majibuai.data.ai.toDisplayMessage
+import com.valentinerutto.majibuai.data.ai.models.AiResult
+import com.valentinerutto.majibuai.data.ai.models.ChatMessage
+import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update

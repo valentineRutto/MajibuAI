@@ -1,4 +1,4 @@
-package com.valentinerutto.majibuai.data.ai
+package com.valentinerutto.majibuai.data.ai.models
 
 import com.google.firebase.ai.type.APINotConfiguredException
 import com.google.firebase.ai.type.InvalidLocationException

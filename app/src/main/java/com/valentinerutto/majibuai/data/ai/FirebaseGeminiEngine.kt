@@ -1,10 +1,12 @@
 package com.valentinerutto.majibuai.data.ai
 
-import android.R.attr.text
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.ai.type.content
+import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
+import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
+import com.valentinerutto.majibuai.data.ai.models.ChatRole
 
 interface FirebaseGeminiAIEngine {
     suspend fun generate(request: AiChatRequest): AiChatResponse
