@@ -13,6 +13,7 @@ sealed interface AiError {
     data object Network : AiError
     data object QuotaExceeded : AiError
     data object ModelUnavailable : AiError
+
     data object InvalidRequest : AiError
     data object EmptyResponse : AiError
     data object AppCheckRejected : AiError
