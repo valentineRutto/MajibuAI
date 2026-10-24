@@ -2,9 +2,12 @@ package com.valentinerutto.majibuai.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.valentinerutto.majibuai.data.ai.AiError
 import com.valentinerutto.majibuai.data.ai.AiRepository
+import com.valentinerutto.majibuai.data.ai.AiResult
 import com.valentinerutto.majibuai.data.ai.ChatMessage
 import com.valentinerutto.majibuai.data.ai.ChatRole
+import com.valentinerutto.majibuai.data.ai.toDisplayMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -16,7 +19,7 @@ data class AskUiState(
     val question: String = "",
     val conversation: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: AiError? = null
 )
 
 data class SavedQuestion(
@@ -82,34 +85,42 @@ class MajibuViewModel(
         }
 
         viewModelScope.launch {
-            try {
-                val answer = repository.explain(requestMessages)
 
-                _uiState.update {
-                    it.copy(
-                        conversation = it.conversation + ChatMessage(
-                            role = ChatRole.ASSISTANT,
-                            content = answer,
-                        ),
-                    )
+            try {
+
+                when (val result = repository.explain(requestMessages)) {
+                    is AiResult.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                conversation = it.conversation + ChatMessage(
+                                    role = ChatRole.ASSISTANT,
+                                    content = result.value,
+                                ),
+                            )
+                        }
+
+                    }
+
+                    is AiResult.Failure -> {
+                        _uiState.update {
+                            it.copy(
+                                question = question,
+                                conversation = it.conversation.filterNot {
+                                    it.id == userMessage.id
+                                },
+                                error = result.error,
+                            )
+                        }
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _uiState.update { state ->
-                    state.copy(
-                        question = question,
-                        conversation = state.conversation.filterNot {
-                            it.id == userMessage.id
-                        },
-                        error = e.message ?: "Something went wrong. Please try again.",
-                    )
-                }
             } finally {
                 _uiState.update {
                     it.copy(isLoading = false)
                 }
             }
+
         }
     }
 }
