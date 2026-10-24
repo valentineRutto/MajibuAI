@@ -64,6 +64,8 @@ fun LibraryScreen(
     onQuestionClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+
+
     var query by remember { mutableStateOf("") }
     var selectedTopic by remember { mutableStateOf("All") }
     val topics = listOf("All", "Android", "Kotlin", "AI", "Compose")

@@ -66,7 +66,11 @@ dependencies {
     implementation(libs.firebase.ai)
     implementation(libs.firebase.appcheck.debug)
     implementation(libs.firebase.appcheck.playintegrity)
-    implementation(libs.orbmotion)
+    implementation(libs.orbmotion) {
+        // Use the app's BOM-managed AndroidX Material 3 instead of OrbMotion's
+        // prerelease Material 3 dependency, which is incompatible with this BOM.
+        exclude(group = "org.jetbrains.compose.material3", module = "material3")
+    }
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -31,31 +31,31 @@ fun MajibuNavGraph(
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier,
 ) {
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = { MajibuBottomBar(navController) },
     ) { innerPadding ->
+
+        val viewModel: MajibuViewModel = koinViewModel()
+
         NavHost(
             navController = navController,
             startDestination = "root",
             modifier = Modifier.padding(innerPadding),
         ) {
             navigation(startDestination = MajibuRoute.Ask.route, route = "root") {
+
                 composable(MajibuRoute.Ask.route) { backStackEntry ->
-                    val parentEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry("root")
-                    }
-                    val viewModel: MajibuViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
                     AskScreen(viewModel = viewModel)
                 }
                 composable(MajibuRoute.Library.route) { backStackEntry ->
-                    val parentEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry("root")
-                    }
-                    val viewModel: MajibuViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
-                    LibraryScreen(
+
+                   LibraryScreen(
                         savedQuestions = viewModel.savedQuestions.collectAsStateWithLifecycle().value,
                     )
+
                 }
                 composable(MajibuRoute.Settings.route) {
                     PlaceholderScreen(title = "Settings")
