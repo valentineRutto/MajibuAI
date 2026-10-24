@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
 import com.valentinerutto.majibuai.data.ai.ChatRole
+import com.valentinerutto.majibuai.data.ai.toDisplayMessage
 import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
@@ -138,7 +139,7 @@ fun AskScreen(
                 item(key = "loading") { LoadingMessage() }
             }
             uiState.error?.let { error ->
-                item(key = "error") { ErrorMessage(error) }
+                item(key = "error") { ErrorMessage(error.toDisplayMessage()) }
             }
         }
 
