@@ -1,5 +1,6 @@
 package com.valentinerutto.majibuai.network
 
+import android.util.Log
 import com.valentinerutto.majibuai.BuildConfig
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -11,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    const val OPENROUTER_BASE_URL = "https://openrouter.ai/"
+    const val OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/"
 
     fun provideRetrofit(baseUrl: String, okHttpClient: OkHttpClient): Retrofit {
 
@@ -20,13 +21,9 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create()).build()
     }
 
-    fun createOkClient(): OkHttpClient {
-        return OkHttpClient.Builder().addInterceptor(createLoggingInterceptor())
-            .build()
-    }
-
     private fun createLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
+            redactHeader("Authorization")
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
             } else {
@@ -37,19 +34,28 @@ object RetrofitClient {
 
 
     fun provideOPenRouterAIOkHttpClient(): OkHttpClient {
+        val apiKey = BuildConfig.OPENROUTER_API_KEY.trim()
 
+        require(apiKey.isNotBlank()) {
+            "OpenRouter API key is missing"
+        }
         return OkHttpClient.Builder()
-            .addInterceptor(createLoggingInterceptor())
+
             .addInterceptor { chain ->
-                chain.proceed(
-                    chain.request().newBuilder()
-                        .addHeader(
+
+                   val request = chain.request().newBuilder()
+                        .header(
                             "Authorization",
-                            "Bearer ${BuildConfig.OPENROUTER_API_KEY}"
+                            "Bearer ${apiKey}"
                         )
+                        .header("Content-Type", "application/json")
+
                         .build()
-                )
+                val response = chain.proceed(request)
+                response
             }
+            .addInterceptor(createLoggingInterceptor())
+
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

@@ -51,14 +51,13 @@ class FirebaseGeminiEngine(
 
         return AiChatResponse(
             text = response.text.orEmpty(),
-            provider = PROVIDER,
+            provider = AiProvider.FIREBASE_AI,
             modelId = modelId,
         )
     }
 
     private companion object {
         const val DEFAULT_MODEL_ID = "gemini-3.5-flash"
-        const val PROVIDER = "Firebase AI Logic (Google AI)"
 
         val MAJIBU_SYSTEM_INSTRUCTION = """
         You are MajibuAI, a friendly technical learning assistant.

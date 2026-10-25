@@ -1,12 +1,15 @@
 package com.valentinerutto.majibuai.data.ai.openrouter
 
+import com.valentinerutto.majibuai.data.ai.models.OpenRouterRequest
+import com.valentinerutto.majibuai.data.ai.models.OpenRouterResponse
+import retrofit2.http.Body
 import retrofit2.http.POST
 
-class OpenRouterApi {
+interface OpenRouterApi {
 
-@POST("/api/v1/chat/completions")
-suspend fun chatCompletions() {
+@POST("chat/completions")
+suspend fun generateChatCompletions(@Body request: OpenRouterRequest): OpenRouterResponse
 
-}
+
 
 }

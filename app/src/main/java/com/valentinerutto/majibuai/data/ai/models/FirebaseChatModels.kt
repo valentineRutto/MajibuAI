@@ -1,5 +1,6 @@
 package com.valentinerutto.majibuai.data.ai.models
 
+import com.valentinerutto.majibuai.data.ai.AiProvider
 import java.util.UUID
 
 enum class ChatRole {
@@ -20,6 +21,6 @@ data class AiChatRequest(
 
 data class AiChatResponse(
     val text: String,
-    val provider: String,
+    val provider: AiProvider,
     val modelId: String
 )
