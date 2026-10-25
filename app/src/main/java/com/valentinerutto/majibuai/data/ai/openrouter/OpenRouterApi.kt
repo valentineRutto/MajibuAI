@@ -6,5 +6,7 @@ class OpenRouterApi {
 
 @POST("/api/v1/chat/completions")
 suspend fun chatCompletions() {
+
 }
+
 }

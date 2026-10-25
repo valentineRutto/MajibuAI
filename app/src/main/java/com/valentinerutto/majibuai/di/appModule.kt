@@ -4,6 +4,7 @@ import com.valentinerutto.majibuai.data.ai.AiRepository
 import com.valentinerutto.majibuai.data.ai.FirebaseGeminiAIEngine
 import com.valentinerutto.majibuai.data.ai.FirebaseGeminiEngine
 import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterApi
+import com.valentinerutto.majibuai.network.RetrofitClient
 import com.valentinerutto.majibuai.ui.MajibuViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -16,17 +17,14 @@ val appModule = module {
     viewModel { MajibuViewModel(get()) }
 
     single {
-        Retrofit.Builder()
-            .baseUrl("https://openrouter.ai/")
-            .addConverterFactory(
-                GsonConverterFactory.create()
-            )
-            .build()
+        RetrofitClient.provideOPenRouterAIOkHttpClient()
     }
-
+    single { RetrofitClient.provideRetrofit(RetrofitClient.OPENROUTER_BASE_URL, get()) }
+single { RetrofitClient.createOkClient() }
     single<OpenRouterApi> {
         get<Retrofit>().create(
             OpenRouterApi::class.java
         )
     }
 }
+
