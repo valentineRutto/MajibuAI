@@ -7,9 +7,11 @@ import com.google.firebase.ai.type.content
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 interface FirebaseGeminiAIEngine {
-    suspend fun generate(request: AiChatRequest): AiChatResponse
+    suspend fun streamChat(request: AiChatRequest): Flow<AiChatResponse>
 }
 
 class FirebaseGeminiEngine(
@@ -22,7 +24,8 @@ class FirebaseGeminiEngine(
 
     }
 
-    override suspend fun generate(request: AiChatRequest): AiChatResponse {
+    override suspend fun streamChat(request: AiChatRequest): Flow<AiChatResponse> = flow {
+
         val currentMessage = request.messages.lastOrNull()
 
             ?: throw IllegalArgumentException("A chat request must contain a user message.")
@@ -47,13 +50,19 @@ class FirebaseGeminiEngine(
             }
 
         val chat = model.startChat(history = history)
-        val response = chat.sendMessage(currentMessage.content)
 
-        return AiChatResponse(
-            text = response.text.orEmpty(),
-            provider = AiProvider.FIREBASE_AI,
-            modelId = modelId,
-        )
+        chat.sendMessageStream(currentMessage.content).collect { response ->
+            response.text?.takeIf { it.isNotEmpty() }?.let { chunck ->
+                emit(
+                    AiChatResponse(
+                        text = chunck,
+                        provider = AiProvider.FIREBASE_AI,
+                        modelId = modelId
+                    )
+                )
+            }
+
+        }
     }
 
     private companion object {

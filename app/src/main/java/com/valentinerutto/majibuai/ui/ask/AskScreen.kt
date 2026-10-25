@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
@@ -33,7 +34,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,7 +85,20 @@ fun AskScreen(
 
     val savedQuestions by viewModel.savedQuestions.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val lastMessage = uiState.conversation.lastOrNull()
 
+    LaunchedEffect(
+        uiState.conversation.size,
+        lastMessage?.content
+    ) {
+        if (uiState.conversation.isNotEmpty()) {
+            listState.animateScrollToItem(
+                listState.layoutInfo.totalItemsCount
+                    .minus(1)
+                    .coerceAtLeast(0)
+            )
+        }
+    }
 
     Column(
         modifier = modifier
@@ -121,9 +137,13 @@ fun AskScreen(
                                 ?.content
                                 .orEmpty()
 
+                            val isStreaming =
+                                uiState.isLoading &&
+                                        message.id == lastMessage?.id
+
                             AssistantMessage(
                                 answer = message.content,
-                                showSaveAction = question.isNotBlank(),
+                                showSaveAction = question.isNotBlank() && message.content.isNotBlank() && !isStreaming,
                                 isSaved = savedQuestions.any {
                                     it.question == question && it.answer == message.content
                                 },
@@ -141,11 +161,25 @@ fun AskScreen(
 
 
 
-            if (uiState.isLoading) {
+            if (uiState.isLoading && lastMessage?.content.isNullOrEmpty()) {
                 item(key = "loading") { LoadingMessage() }
             }
             uiState.error?.let { error ->
                 item(key = "error") { ErrorMessage(error.toDisplayMessage()) }
+            }
+        }
+
+        if (uiState.isLoading) {
+            TextButton(
+                onClick = viewModel::stopGenerating,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Stop,
+                    contentDescription = null
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Stop generating")
             }
         }
 
