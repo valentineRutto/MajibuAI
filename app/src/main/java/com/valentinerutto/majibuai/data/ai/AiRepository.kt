@@ -11,8 +11,14 @@ import kotlin.coroutines.cancellation.CancellationException
 
 class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private val openRouterEngine: OpenRouterEngine) {
 
-    suspend fun explain(messages: List<ChatMessage>): AiResult<String> =
-        explainOpenRouterAi(messages)
+
+
+    suspend fun explain(messages: List<ChatMessage>, provider: AiProvider): AiResult<String> =
+        when (provider) {
+            AiProvider.FIREBASE_AI -> explainFirebaseAi(messages)
+            AiProvider.OPENROUTER -> explainOpenRouterAi(messages)
+            AiProvider.ON_DEVICE -> AiResult.Failure(AiError.ProviderNotConfigured)
+        }
 
     suspend fun explainFirebaseAi(messages: List<ChatMessage>): AiResult<String> {
 

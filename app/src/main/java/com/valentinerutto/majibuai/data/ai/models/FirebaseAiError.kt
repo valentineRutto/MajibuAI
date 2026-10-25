@@ -15,6 +15,7 @@ sealed interface AiError {
 
     data class InvalidRequest(val details: AiErrorDetails? = null) : AiError
     data object EmptyResponse : AiError
+    data object ProviderNotConfigured : AiError
     data object AppCheckRejected : AiError
     data class Authentication(val details: AiErrorDetails? = null) : AiError
     data class PermissionDenied(val details: AiErrorDetails? = null) : AiError
@@ -91,6 +92,7 @@ fun AiError.toDisplayMessage(): String = when (this) {
     is AiError.ModelUnavailable -> "The AI service is unavailable right now."
     is AiError.InvalidRequest -> "Please check your message and try again."
     AiError.EmptyResponse -> "The AI returned an empty response. Try again."
+    AiError.ProviderNotConfigured -> "On-device AI is not available yet. Choose Firebase or OpenRouter."
     AiError.AppCheckRejected ->
         "App verification failed. Check that this device's debug token is registered."
     is AiError.Authentication -> "AI provider authentication failed. Check the API configuration."

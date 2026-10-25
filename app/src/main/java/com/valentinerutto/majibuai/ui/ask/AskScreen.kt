@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Send
@@ -27,11 +28,16 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
+import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.toDisplayMessage
 import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.theme.AppBackground
@@ -82,7 +89,11 @@ fun AskScreen(
             .fillMaxSize()
             .background(AppBackground),
     ) {
-        AskTopBar(onBackClick = onBackClick)
+        AskTopBar(
+            selectedProvider = uiState.selectedProvider,
+            onProviderSelected = viewModel::selectProvider,
+            onBackClick = onBackClick,
+        )
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -148,27 +159,66 @@ fun AskScreen(
 }
 
 @Composable
-private fun AskTopBar(onBackClick: () -> Unit) {
+private fun AskTopBar(
+    selectedProvider: AiProvider,
+    onProviderSelected: (AiProvider) -> Unit,
+    onBackClick: () -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+            }
+            Text(
+                text = "Ask",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 4.dp),
+            )
         }
-        Text(
-            text = "Ask",
-            style = MaterialTheme.typography.titleMedium,
-            color = TextPrimary,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 4.dp),
-        )
 
+        Box {
+            androidx.compose.material3.TextButton(onClick = { menuExpanded = true }) {
+                Text(
+                    text = selectedProvider.label,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = "Choose AI provider",
+                    tint = TextPrimary,
+                )
+            }
+
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+            ) {
+                AiProvider.entries.forEach { provider ->
+                    DropdownMenuItem(
+                        text = { Text(provider.label) },
+                        onClick = {
+                            onProviderSelected(provider)
+                            menuExpanded = false
+                        },
+                    )
+                }
+            }
+       }
     }
 }
+
 
 @Composable
 private fun UserMessage(text: String) {

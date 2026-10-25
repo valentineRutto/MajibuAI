@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.valentinerutto.majibuai.data.ai.models.AiError
 import com.valentinerutto.majibuai.data.ai.AiRepository
+import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiResult
 import com.valentinerutto.majibuai.data.ai.models.ChatMessage
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
@@ -18,7 +19,8 @@ data class AskUiState(
     val question: String = "",
     val conversation: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
-    val error: AiError? = null
+    val error: AiError? = null,
+    val selectedProvider: AiProvider = AiProvider.OPENROUTER,
 )
 
 data class SavedQuestion(
@@ -59,6 +61,10 @@ class MajibuViewModel(
         }
     }
 
+    fun selectProvider(provider: AiProvider) {
+        _uiState.update { it.copy(selectedProvider = provider, error = null) }
+    }
+
     fun ask() {
 
         val currentState = _uiState.value
@@ -87,7 +93,7 @@ class MajibuViewModel(
 
             try {
 
-                when (val result = repository.explain(requestMessages)) {
+                when (val result = repository.explain(requestMessages, currentState.selectedProvider)) {
                     is AiResult.Success -> {
                         _uiState.update {
                             it.copy(
