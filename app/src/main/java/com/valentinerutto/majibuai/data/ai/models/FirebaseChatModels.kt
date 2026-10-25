@@ -22,5 +22,6 @@ data class AiChatRequest(
 data class AiChatResponse(
     val text: String,
     val provider: AiProvider,
-    val modelId: String
+    val modelId: String,
+    val error: String? = null
 )

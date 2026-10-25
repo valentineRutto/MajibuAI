@@ -1,17 +1,22 @@
 package com.valentinerutto.majibuai.data.ai.openrouter
 
 import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.data.ai.models.AiError
+import com.valentinerutto.majibuai.data.ai.models.AiErrorDetails
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
+import com.valentinerutto.majibuai.data.ai.models.AiProviderException
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterMessage
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterRequest
-import java.io.IOException
+import kotlinx.serialization.json.Json
 
 class OpenRouterEngine(
-    private val api: OpenRouterApi) {
+    private val api: OpenRouterApi,
+) {
 
     suspend fun generate(request: AiChatRequest): AiChatResponse {
+
         val latestMessage = request.messages.lastOrNull()
             ?: throw IllegalArgumentException("A chat request must contain a user message.")
 
@@ -22,39 +27,55 @@ class OpenRouterEngine(
             "The user message must not be blank."
         }
 
-        val messages = buildList {
 
-            add(OpenRouterMessage(role = "system", content = MAJIBU_SYSTEM_INSTRUCTION))
 
-            request.messages
-                .filter { it.content.isNotBlank() }
-                .forEach { message ->
-                    add(
-                        OpenRouterMessage(
-                            role = when (message.role) {
-                                ChatRole.USER -> "user"
-                                ChatRole.ASSISTANT -> "assistant"
-                            },
-                            content = message.content,
-                        )
-                    )
-                }
-        }
+        val messages = listOf(
+            OpenRouterMessage(
+                role = "system",
+                content = MAJIBU_SYSTEM_INSTRUCTION
+            )
+        ) + request.messages
+            .filter { it.content.isNotBlank() }
+            .map { message ->
+                OpenRouterMessage(
+                    role = when (message.role) {
+                        ChatRole.USER -> "user"
+                        ChatRole.ASSISTANT -> "assistant"
+                    },
+                    content = message.content
+                )
+            }
 
-        val response = api.generateChatCompletions(
+        val httpResponse = api.generateChatCompletions(
             OpenRouterRequest(
                 model = MODEL_ID,
                 messages = messages,
             )
         )
 
-        val assistantMessage = response.choices.firstOrNull()?.message
-            ?: throw IOException("OpenRouter returned no chat completion choices.")
+        if (!httpResponse.isSuccessful) {
+            throw AiProviderException(
+                error = httpResponse.code().toAiError(),
+            )
+        }
+
+
+
+        val result = httpResponse.body()
+            ?: throw AiProviderException(AiError.EmptyResponse)
+
+
+        val assistantMessage = result.choices
+            .firstOrNull()
+            ?.message
+            ?.content
+            ?.takeIf { it.isNotBlank() }
+            ?: throw AiProviderException(AiError.EmptyResponse)
 
         return AiChatResponse(
-            text = assistantMessage.content,
+            text = assistantMessage,
             provider = AiProvider.OPENROUTER,
-            modelId = response.model ?: MODEL_ID,
+            modelId = result.model ?: MODEL_ID,
         )
 
     }

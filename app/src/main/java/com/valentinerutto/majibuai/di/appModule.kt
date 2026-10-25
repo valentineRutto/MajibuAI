@@ -7,10 +7,10 @@ import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterApi
 import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterEngine
 import com.valentinerutto.majibuai.network.RetrofitClient
 import com.valentinerutto.majibuai.ui.MajibuViewModel
+import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 val appModule = module {
     single<FirebaseGeminiAIEngine> { FirebaseGeminiEngine() }
@@ -21,7 +21,14 @@ val appModule = module {
     single {
         RetrofitClient.provideOPenRouterAIOkHttpClient()
     }
-    single { RetrofitClient.provideRetrofit(RetrofitClient.OPENROUTER_BASE_URL, get()) }
+    single { Json { ignoreUnknownKeys = true } }
+    single {
+        RetrofitClient.provideRetrofit(
+            RetrofitClient.OPENROUTER_BASE_URL,
+            get(),
+            get(),
+        )
+    }
 
     single<OpenRouterApi> {
         get<Retrofit>().create(

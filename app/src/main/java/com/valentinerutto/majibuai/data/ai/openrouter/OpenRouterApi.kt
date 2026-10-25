@@ -4,11 +4,12 @@ import com.valentinerutto.majibuai.data.ai.models.OpenRouterRequest
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.Response
 
 interface OpenRouterApi {
 
 @POST("chat/completions")
-suspend fun generateChatCompletions(@Body request: OpenRouterRequest): OpenRouterResponse
+suspend fun generateChatCompletions(@Body request: OpenRouterRequest): Response<OpenRouterResponse>
 
 
 

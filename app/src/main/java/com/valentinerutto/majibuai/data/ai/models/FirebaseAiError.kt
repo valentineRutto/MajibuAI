@@ -11,13 +11,40 @@ import java.io.IOException
 sealed interface AiError {
     data object Network : AiError
     data object QuotaExceeded : AiError
-    data object ModelUnavailable : AiError
+    data class ModelUnavailable(val details: AiErrorDetails? = null) : AiError
 
-    data object InvalidRequest : AiError
+    data class InvalidRequest(val details: AiErrorDetails? = null) : AiError
     data object EmptyResponse : AiError
     data object AppCheckRejected : AiError
-    data class Unknown(val message: String?) : AiError
+    data class Authentication(val details: AiErrorDetails? = null) : AiError
+    data class PermissionDenied(val details: AiErrorDetails? = null) : AiError
+    data class PaymentRequired(val details: AiErrorDetails? = null) : AiError
+    data class RateLimited(
+        val retryAfterSeconds: Long?,
+        val details: AiErrorDetails? = null,
+    ) : AiError
+    data class ContextLengthExceeded(val details: AiErrorDetails? = null) : AiError
+    data class ContentPolicyViolation(val details: AiErrorDetails? = null) : AiError
+    data class ProviderUnavailable(val details: AiErrorDetails? = null) : AiError
+    data class Unknown(
+        val message: String?,
+        val details: AiErrorDetails? = null,
+    ) : AiError
 }
+
+data class AiErrorDetails(
+    val statusCode: Int? = null,
+    val errorType: String? = null,
+    val providerCode: String? = null,
+    val providerMessage: String? = null,
+    val metadataJson: String? = null,
+    val retryAfterSeconds: Long? = null,
+)
+
+class AiProviderException(
+    val error: AiError,
+    cause: Throwable? = null,
+) : Exception("AI provider request failed", cause)
 
 sealed interface AiResult<out T> {
     data class Success<T>(val value: T) : AiResult<T>
@@ -27,7 +54,7 @@ sealed interface AiResult<out T> {
 fun Exception.toAiError(): AiError = when (this) {
     is QuotaExceededException -> AiError.QuotaExceeded
 
-    is IllegalArgumentException -> AiError.InvalidRequest
+    is IllegalArgumentException -> AiError.InvalidRequest()
 
     is IOException,
     is RequestTimeoutException,
@@ -35,7 +62,7 @@ fun Exception.toAiError(): AiError = when (this) {
 
     is APINotConfiguredException,
     is ServiceDisabledException,
-    is InvalidLocationException -> AiError.ModelUnavailable
+    is InvalidLocationException -> AiError.ModelUnavailable()
 
     else -> if (hasAppCheckFailure()) AiError.AppCheckRejected else AiError.Unknown(message)
 }
@@ -61,10 +88,17 @@ private fun Throwable.hasAppCheckFailure(): Boolean {
 fun AiError.toDisplayMessage(): String = when (this) {
     AiError.Network -> "Check your internet connection and try again."
     AiError.QuotaExceeded -> "The AI usage limit was reached. Try again later."
-    AiError.ModelUnavailable -> "The AI service is unavailable right now."
-    AiError.InvalidRequest -> "Please check your message and try again."
+    is AiError.ModelUnavailable -> "The AI service is unavailable right now."
+    is AiError.InvalidRequest -> "Please check your message and try again."
     AiError.EmptyResponse -> "The AI returned an empty response. Try again."
     AiError.AppCheckRejected ->
         "App verification failed. Check that this device's debug token is registered."
+    is AiError.Authentication -> "AI provider authentication failed. Check the API configuration."
+    is AiError.PermissionDenied -> "The AI request was denied by the provider."
+    is AiError.PaymentRequired -> "The AI provider has reached its usage or credit limit."
+    is AiError.RateLimited -> "Too many AI requests. Please wait and try again."
+    is AiError.ContextLengthExceeded -> "This conversation is too long. Start a new chat and try again."
+    is AiError.ContentPolicyViolation -> "The AI provider could not answer that request."
+    is AiError.ProviderUnavailable -> "The AI service is unavailable right now. Try again shortly."
     is AiError.Unknown -> "Something went wrong. Please try again."
 }

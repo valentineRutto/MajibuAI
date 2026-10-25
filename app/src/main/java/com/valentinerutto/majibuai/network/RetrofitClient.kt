@@ -1,12 +1,12 @@
 package com.valentinerutto.majibuai.network
 
-import android.util.Log
 import com.valentinerutto.majibuai.BuildConfig
+import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
 
@@ -14,11 +14,16 @@ object RetrofitClient {
 
     const val OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/"
 
-    fun provideRetrofit(baseUrl: String, okHttpClient: OkHttpClient): Retrofit {
-
-        "application/json".toMediaType()
-        return Retrofit.Builder().baseUrl(baseUrl).client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create()).build()
+    fun provideRetrofit(
+        baseUrl: String,
+        okHttpClient: OkHttpClient,
+        json: Json,
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
     }
 
     private fun createLoggingInterceptor(): HttpLoggingInterceptor {
