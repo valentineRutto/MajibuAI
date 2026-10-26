@@ -9,10 +9,12 @@ import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterMessage
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterRequest
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterStreamChunk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.json.Json
 
 
@@ -22,7 +24,7 @@ class OpenRouterEngine(
 ) {
 
 
-    suspend fun streamChat(request: AiChatRequest): Flow<AiChatResponse> = flow {
+     fun streamChat(request: AiChatRequest): Flow<AiChatResponse> = flow {
         val latestMessage = request.messages.lastOrNull()
             ?: throw IllegalArgumentException("A chat request must contain a user message.")
 
@@ -76,7 +78,9 @@ class OpenRouterEngine(
             var completed = false
 
             while (true) {
+
                 currentCoroutineContext().ensureActive()
+
                 val line = source.readUtf8Line() ?: break
                 if (!line.startsWith("data:")) continue
 
@@ -111,7 +115,7 @@ class OpenRouterEngine(
             }
         }
 
-    }
+    }.flowOn(Dispatchers.IO)
 
     private companion object {
         private const val MODEL_ID =
