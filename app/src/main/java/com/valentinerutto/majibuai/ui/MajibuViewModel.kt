@@ -41,9 +41,22 @@ class MajibuViewModel(
     private val _savedQuestions = MutableStateFlow<List<SavedQuestion>>(emptyList())
     val savedQuestions = _savedQuestions.asStateFlow()
     private var streamingJob: Job? = null
+
     fun saveCurrentAnswer() {
-        val exchange = _uiState.value.conversation.lastOrNull() ?: return
-      //  saveAnswer(exchange.question, exchange.answer)
+        val conversation = _uiState.value.conversation
+
+        val answer = conversation.lastOrNull()
+            ?.takeIf { it.role == ChatRole.ASSISTANT }
+            ?.content
+            ?: return
+
+        val question = conversation
+            .dropLast(1)
+            .lastOrNull { it.role == ChatRole.USER }
+            ?.content
+            ?: return
+
+        saveAnswer(question, answer)
     }
 
     fun saveAnswer(question: String, answer: String) {
@@ -133,7 +146,7 @@ class MajibuViewModel(
                 throw e
             } catch (e: Exception) {
                 handleError(
-                    error = AiError.Unknown(e.message),
+                    error = AiError.Unknown(e.message.orEmpty()),
                     question = question,
                     userMessage = userMessage,
                     assistantMessage = assistantMessage

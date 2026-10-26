@@ -2,16 +2,13 @@ package com.valentinerutto.majibuai.data.ai.openrouter
 
 import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiError
-import com.valentinerutto.majibuai.data.ai.models.AiErrorDetails
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
 import com.valentinerutto.majibuai.data.ai.models.AiProviderException
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterMessage
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterRequest
-import com.valentinerutto.majibuai.data.ai.models.OpenRouterResponse
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterStreamChunk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -74,56 +71,45 @@ class OpenRouterEngine(
         val result = httpResponse.body()
             ?: throw AiProviderException(AiError.EmptyResponse)
 
-result.use {
-    val source = it.source()
-    var completed = false
+        result.use { responseBody ->
+            val source = responseBody.source()
+            var completed = false
 
-    while (true){
-        currentCoroutineContext().ensureActive()
+            while (true) {
+                currentCoroutineContext().ensureActive()
+                val line = source.readUtf8Line() ?: break
+                if (!line.startsWith("data:")) continue
 
-        val line = source.readUtf8Line()?: break
+                val data = line.removePrefix("data:").trim()
+                if (data == "[DONE]") {
+                    completed = true
+                    break
+                }
+                if (data.isBlank()) continue
 
-        if (!line.startsWith("data:")) continue
+                val chunk = json.decodeFromString<OpenRouterStreamChunk>(data)
+                chunk.error?.let { error ->
+                    throw AiProviderException(AiError.Unknown(error.message))
+                }
 
-        val data = line.removePrefix("data:").trim()
+                val text = chunk.choices.firstOrNull()?.delta?.content ?: continue
+                if (text.isNotEmpty()) {
+                    emit(
+                        AiChatResponse(
+                            text = text,
+                            provider = AiProvider.OPENROUTER,
+                            modelId = chunk.model ?: MODEL_ID,
+                        )
+                    )
+                }
+            }
 
-        if (data == "[DONE]"){
-            completed = true
-            break
-        }
-
-        if (data.isBlank()) continue
-
-        val chunk = json.decodeFromString<OpenRouterStreamChunk>(data)
-
-        chunk.error?.let { error ->
-
-
-            throw AiProviderException(
-
-                AiError.Unknown( error.message))
-
-        }
-
-val text = chunk.choices.firstOrNull()?.delta?.content?: continue
-
-        if (!text.isNullOrEmpty()){
-            emit(
-                AiChatResponse(
-                    text = text,
-                    provider = AiProvider.OPENROUTER,
-                    modelId = chunk.model ?: MODEL_ID,
+            if (!completed) {
+                throw AiProviderException(
+                    AiError.Unknown("OpenRouter stream ended without a completion marker.")
                 )
-            )
+            }
         }
-
-        if (!completed){
-            throw AiProviderException(AiError.Unknown("Stream completed without proper termination."))
-        }
-
-
-    }
-}
 
     }
 

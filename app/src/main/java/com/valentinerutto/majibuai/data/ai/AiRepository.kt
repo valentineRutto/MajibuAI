@@ -18,9 +18,9 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
     suspend fun explain(messages: List<ChatMessage>, provider: AiProvider): Flow<AiResult<String>> =
         when (provider) {
             AiProvider.FIREBASE_AI -> explainStreamFirebaseAi(messages)
-            AiProvider.OPENROUTER -> explainOpenRouterAi(messages)
-            AiProvider.ON_DEVICE -> AiResult.Failure(AiError.ProviderNotConfigured)
-        } as Flow<AiResult<String>>
+            AiProvider.OPENROUTER -> explainStreamOpenRouterAi(messages)
+            AiProvider.ON_DEVICE -> flow { emit(AiResult.Failure(AiError.ProviderNotConfigured)) }
+        }
 
     suspend fun explainStreamFirebaseAi(messages: List<ChatMessage>): Flow<AiResult<String>> =
         flow {
@@ -29,11 +29,9 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
             var hasContent = false
 
             firebaseEngine.streamChat(request).collect { response ->
-                if (response.text.isNotBlank()) {
+                if (response.text.isNotEmpty()) {
                     emit(AiResult.Success(response.text))
-                    hasContent = true
-                } else {
-                    emit(AiResult.Failure(AiError.EmptyResponse))
+                    if (response.text.isNotBlank()) hasContent = true
                 }
             }
 
@@ -45,35 +43,25 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
 
         }.catch { e ->
             if (e is CancellationException) throw e
-            emit(AiResult.Failure(AiError.Unknown(e.message.orEmpty())))
+            val error = if (e is AiProviderException) e.error else null
+            emit(AiResult.Failure(error ?: AiError.Unknown(e.message.orEmpty())))
 
         }
 
 
-    suspend fun explainOpenRouterAi(messages: List<ChatMessage>): Flow<AiResult<String>> = flow {
-
-        emit(AiResult.Success("OpenRouterAI"))
-
-        return try {
-            val request = AiChatRequest(messages)
-
-            val response = openRouterEngine.generate(request)
-
-            if (response.text.isBlank()) {
-                AiResult.Failure(AiError.EmptyResponse)
-            } else {
-                AiResult.Success(response.text)
+    suspend fun explainStreamOpenRouterAi(messages: List<ChatMessage>): Flow<AiResult<String>> = flow {
+        var hasContent = false
+        openRouterEngine.streamChat(AiChatRequest(messages)).collect { response ->
+            if (response.text.isNotEmpty()) {
+                hasContent = true
+                emit(AiResult.Success(response.text))
             }
-
-
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: AiProviderException) {
-            AiResult.Failure(e.error)
-        } catch (e: Exception) {
-            AiResult.Failure(e.toAiError())
-
         }
+        if (!hasContent) emit(AiResult.Failure(AiError.EmptyResponse))
+    }.catch { e ->
+        if (e is CancellationException) throw e
+        val error = if (e is AiProviderException) e.error else null
+        emit(AiResult.Failure(error ?: AiError.Unknown(e.message.orEmpty())))
     }
 
 }
