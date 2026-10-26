@@ -14,7 +14,7 @@ import retrofit2.Retrofit
 
 val appModule = module {
     single<FirebaseGeminiAIEngine> { FirebaseGeminiEngine() }
-    single { OpenRouterEngine(get()) }
+    single { OpenRouterEngine(get(),get()) }
     single { AiRepository(get(),get()) }
     viewModel { MajibuViewModel(get()) }
 
