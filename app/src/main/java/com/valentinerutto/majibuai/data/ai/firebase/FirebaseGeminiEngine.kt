@@ -1,9 +1,10 @@
-package com.valentinerutto.majibuai.data.ai
+package com.valentinerutto.majibuai.data.ai.firebase
 
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.ai.type.content
+import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
