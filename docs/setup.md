@@ -1,224 +1,212 @@
-
-# MajibuAI — Development Setup
+# MajibuAI Android Codelab Setup
 
 **Ask. Understand. Remember.**
 
-Welcome to the MajibuAI Android codelab!
+MajibuAI is an AI learning companion built with Kotlin and Jetpack Compose. In this codelab, you’ll explore how to route chat requests between cloud and on-device AI providers while keeping the chat UI and repository flow consistent.
 
-MajibuAI is an AI-powered learning companion that helps users ask questions, understand technical concepts, and save answers for future reference.
+## What you’ll explore
 
-This codelab demonstrates how to build an Android application using Kotlin, Jetpack Compose, MVVM architecture, and AI integration.
+- Firebase AI Logic with Gemini
+- OpenRouter as an alternative cloud provider
+- Streaming responses with Kotlin Flow
+- On-device Gemma inference with LiteRT-LM
+- Hybrid routing between cloud and local providers
+- Typed error handling and retry states
+- Saving questions and answers to the Library
 
-## Prerequisites
+## Requirements
 
-Before getting started, make sure you have:
+- Android Studio with support for Android Gradle Plugin 9.1.1
+- JDK 17
+- Android SDK Platform 37
+- An emulator or Android device running API 24 or higher
+- Git
+- Internet access for dependency resolution and the initial on-device model download
+- A Firebase project for Firebase AI Logic
+- An OpenRouter API key
 
-- Android Studio with Jetpack Compose support
-- JDK compatible with the project's Gradle configuration
-- Android SDK installed
-- Git installed
-- An Android emulator or physical Android device
-- Basic knowledge of Kotlin and Jetpack Compose
+A physical device is recommended when exploring on-device inference.
 
-## 1. Clone the Repository
-
-Open your terminal and run:
+## Get the project
 
 ```bash
 git clone https://github.com/valentineRutto/MajibuAI.git
 cd MajibuAI
+git fetch --all
 ```
 
-## 2. Checkout the Starter Branch
-
-The starter branch contains the initial MajibuAI application.
+To follow the codelab from its starter checkpoint:
 
 ```bash
-git fetch origin
 git switch 00-starter
 ```
 
-If the branch is not available locally, run:
+To explore the completed application:
 
 ```bash
-git switch --track origin/00-starter
+git switch main
 ```
 
-To work on your own implementation without modifying the starter branch:
+The repository checkpoints are:
 
-```bash
-git switch -c my-majibuai-codelab
-```
-
-## 3. Open the Project in Android Studio
-
-1. Launch Android Studio.
-2. Select **Open**.
-3. Navigate to the cloned `MajibuAI` directory.
-4. Wait for Gradle synchronization to complete.
-5. Install any missing SDK components if prompted.
-
-## 4. Understand the Project Architecture
-
-MajibuAI follows the **Model–View–ViewModel (MVVM)** architecture.
-
-The starter uses:
-
-| Technology | Purpose |
+| Branch | Codelab focus |
 |---|---|
-| Kotlin | Application development |
-| Jetpack Compose | Declarative UI |
-| MVVM | Separation of UI and application logic |
-| StateFlow | Reactive UI state management |
-| Koin | Dependency injection |
-| AiRepository | Handles AI explanation requests |
-| Library | Displays saved questions and answers |
+| `00-starter` | Starting app and chat UI |
+| `01-cloud-ai` | Firebase AI Logic |
+| `02-multi-provider` | Provider abstraction and OpenRouter |
+| `03-streaming` | Streaming chat responses |
+| `04-on-device-ai` | LiteRT-LM and local model management |
+| `o5-hybrid-ai` | Cloud and on-device routing |
+| `main` | Completed reference application |
 
-### Application Flow
+## Open and sync the project
+
+1. Open Android Studio.
+2. Select **Open** and choose the cloned `MajibuAI` folder.
+3. Allow Android Studio to create `local.properties` and sync Gradle.
+4. Install Android SDK Platform 37 if prompted.
+5. Set Android Studio's Gradle JDK to JDK 17 if Gradle sync reports a Java version error.
+
+## Configure OpenRouter
+
+The app reads the OpenRouter key from `local.properties` and exposes it through `BuildConfig`.
+
+Add this property to the existing `local.properties` file. Keep the `sdk.dir` entry created by Android Studio:
+
+```properties
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+Do not commit `local.properties` or share your API key. The app embeds this key in the debug build, so use a development key for this codelab. A production app should keep provider keys on a backend.
+
+## Configure Firebase AI Logic
+
+1. Create or select a Firebase project.
+2. Register an Android app with this application ID:
+
+   ```text
+   com.valentinerutto.majibuai
+   ```
+
+3. In the Firebase console, open **AI Logic** and complete the setup for the Gemini API provider.
+4. Download the generated `google-services.json`.
+5. Place it here:
+
+   ```text
+   app/google-services.json
+   ```
+
+   This file is ignored by Git in this repository. Do not commit it.
+
+### Register the App Check debug token
+
+The debug build installs the App Check debug provider. To allow Firebase AI requests from your development device:
+
+1. Run the debug app once.
+2. In Logcat, find the `DebugAppCheckProvider` message containing the debug token.
+3. In Firebase Console, open **App Check**, select your Android app, and register that token under **Manage debug tokens**.
+4. Retry a Firebase AI request.
+
+Keep the debug token private. The release build uses Play Integrity instead of the debug provider.
+
+## Build and run
+
+In Android Studio, select the `app` run configuration and click **Run**.
+
+You can also build the debug APK from a terminal:
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+## Try the providers
+
+### Firebase
+
+Choose **Gemini** from the provider menu and ask a question, for example:
+
+> Explain Kotlin Flow with a short Android example.
+
+If the request fails, check Logcat and verify your Firebase configuration, App Check token, and project quota.
+
+### OpenRouter
+
+Choose **OpenRouter** and ask the same question. Check that `OPENROUTER_API_KEY` is present in `local.properties` if the request reports a missing or invalid key.
+
+### On-device
+
+1. Choose **On-device**.
+2. Use the model download action shown in the screen.
+3. Wait for the model to download and initialize.
+4. Ask a question after the model is ready.
+
+The model is downloaded from the URL configured in `appModule.kt` and stored in the app’s private files directory. The first download requires an internet connection.
+
+### Hybrid
+
+Choose **Hybrid** and try a question while online. Then try again offline after the on-device model is ready. Hybrid routing can use cloud providers while online and the local model when it is available as a fallback.
+
+### Save an answer
+
+After an answer appears, use the save action and open **Library** to revisit the saved question and answer.
+
+## Follow the request flow
 
 ```text
-User
-  |
-  v
 AskScreen
-  |
-  v
-AskViewModel
-  |
-  v
+   |
+   v
+MajibuViewModel
+   |
+   v
 AiRepository
-  |
-  v
-AskUiState
-  |
-  v
-Compose UI
+   |             |                 |
+   v             v                 v
+Firebase      OpenRouter        LiteRT-LM
+                                  |
+                                  v
+                            Local model
 ```
 
-The ViewModel manages the screen state while the repository handles explanation requests.
+`AiRepository` selects the provider and returns typed `AiResult` values. `MajibuViewModel` exposes chat and provider state to the Compose UI.
 
-## 5. Run the Application
+## Troubleshooting
 
-1. Start an Android emulator or connect a physical device.
-2. Select the `app` run configuration.
-3. Click **Run** in Android Studio.
-4. Wait for the application to launch.
+### Gradle reports a Java version error
 
-## 6. Explore MajibuAI
+Set the Gradle JDK in Android Studio to JDK 17, then sync again.
 
-### Welcome Screen
+### Firebase reports an App Check or attestation error
 
-The welcome screen introduces MajibuAI and provides a **Get Started** button.
+Register the debug token printed by the debug build in Firebase Console. Confirm that the app is connected to the Firebase project that owns the registered Android app.
 
-Tap **Get Started** to continue to the main application.
+### Firebase reports a quota error
 
-### Ask Screen
+Check the model and project limits in Firebase AI Logic or Google AI Studio. Switching providers will let you continue the codelab if another provider is configured.
 
-The Ask screen allows users to:
+### OpenRouter reports a missing key or 401
 
-- Enter questions about technical concepts.
-- Submit questions to MajibuAI.
-- View generated or simulated explanations, depending on the repository implementation.
-- View loading and error states.
-- Save answers for future reference.
+Check that `OPENROUTER_API_KEY` is in the project-root `local.properties` file, without quotes or extra spaces, and that the key is active.
 
-### Library Screen
+### On-device model is unavailable or fails to initialize
 
-The Library screen allows users to:
+Confirm that the download completed, that the device has enough free storage, and that the device remains online during the initial download. Check Logcat for LiteRT-LM errors.
 
-- View saved questions and answers.
-- Revisit explanations from previous learning sessions.
-- Access previously saved content.
+## Project map
 
-The Library is part of the starter implementation and is not an empty placeholder.
+| Path | Purpose |
+|---|---|
+| `ui/ask/AskScreen.kt` | Chat interface and provider selection |
+| `ui/MajibuViewModel.kt` | Chat state, provider selection, and user actions |
+| `data/ai/AiRepository.kt` | Provider routing and result handling |
+| `data/ai/firebase/FirebaseGeminiEngine.kt` | Firebase AI Logic integration |
+| `data/ai/openrouter/` | OpenRouter API and engine |
+| `data/ai/ondevice/` | LiteRT-LM model download and inference |
+| `di/appModule.kt` | Koin dependency registration |
 
-## 7. Test the Application
+## Continue the codelab
 
-Try the following exercises.
-
-### Test 1: Ask a Question
-
-Enter:
-
-**What is Kotlin Flow?**
-
-Tap **Ask MajibuAI**.
-
-**Expected result:** An explanation appears on the screen.
-
-### Test 2: Save an Answer
-
-After receiving an explanation:
-
-1. Tap the **Save** action.
-2. Navigate to the Library screen.
-3. Find the saved question and answer.
-
-**Expected result:** The saved answer appears in the Library.
-
-### Test 3: Navigate Between Screens
-
-Navigate between the Ask and Library screens.
-
-**Expected result:** Navigation works without crashing.
-
-## 8. Troubleshooting
-
-### Gradle Sync Fails
-
-- Confirm that your JDK matches the project's requirements.
-- Check that the Android SDK is installed.
-- Ensure your internet connection is available for dependency downloads.
-
-### Koin Dependency Injection Error
-
-Verify that:
-
-- Koin is initialized in `MajibuApplication`.
-- `MajibuApplication` is registered in `AndroidManifest.xml`.
-- The repository and ViewModel dependencies are registered in your Koin module.
-
-### No Answer Appears
-
-- Check Logcat for exceptions.
-- Verify that `AskViewModel` calls `AiRepository`.
-- Confirm that the repository returns a response.
-- Check that `AskUiState` is updated correctly.
-
-### Saved Answers Do Not Appear
-
-- Verify that the save action is triggered.
-- Confirm that the Library reads from the same data source used to save answers.
-- Check that the saved answers are exposed to the Library UI.
-
-## 9. What's Next?
-
-After exploring the starter project, continue through the codelab checkpoints.
-
-| Branch | Focus                                             |
-|---|---------------------------------------------------|
-| `00-starter` | Compose UI, MVVM, Koin, repository, saved answers |
-| `01-cloud-ai` | Cloud AI integration Firebase + Gemini            |
-| `02-streaming` | Streaming responses with Kotlin Flow              |
-| `03-save-for-later` | Improve or extend saved-answer persistence        |
-| `04-on-device-ai` | On-device AI inference                            |
-| `05-hybrid-ai` | Cloud and local AI routing                        |
-| `06-final` | Final application and polish                      |
-
-## 10. Ready to Build!
-
-You are ready to continue when:
-
-- [ ] The project builds successfully.
-- [ ] The welcome screen opens.
-- [ ] Navigation works.
-- [ ] You can submit a question.
-- [ ] MajibuAI displays an explanation.
-- [ ] You can save an answer.
-- [ ] Saved answers appear in the Library.
-- [ ] The application runs without crashes.
-
-**Next step:** Open [`codelab.md`](codelab.md) and continue building MajibuAI.
+Open [`codelab.md`](codelab.md) for the guided implementation steps.
 
 ---
 
