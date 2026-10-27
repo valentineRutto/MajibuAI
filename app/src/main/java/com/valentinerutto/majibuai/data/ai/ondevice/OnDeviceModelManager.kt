@@ -14,12 +14,12 @@ import java.net.URL
 class OnDeviceModelManager(context: Context, private val modelUrl: String){
     private val modelFile = File(
         context.filesDir,
-        "models/majibu-model.litertlm"
+        "models/gemma3-1b-it-int4.litertlm"
     )
     private val downloadMutex = Mutex()
     private val temporaryFile = File(
         context.filesDir,
-        "models/majibu-model.litertlm.tmp"
+        "models/gemma3-1b-it-int4.litertlm.tmp"
     )
     fun isDownloaded(): Boolean =
         modelFile.isFile && modelFile.length() > 0L

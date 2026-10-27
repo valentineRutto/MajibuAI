@@ -124,7 +124,7 @@ fun AskScreen(
             text = {
                 Text(
                     "MajibuAI needs to download Gemma 3 1B " +
-                            "(approximately 1 GB). " +
+                            "(approximately 600MBs). " +
                             "After downloading, you can ask questions offline."
                 )
             },
@@ -158,6 +158,14 @@ fun AskScreen(
             onProviderSelected = viewModel::selectProvider,
             onBackClick = onBackClick,
         )
+        if (onDeviceModelState.availability == OnDeviceAvailability.DOWNLOADING) {
+            OnDeviceDownloadProgress(
+                downloaded = onDeviceModelState.bytesDownloaded,
+                total = onDeviceModelState.bytesToDownload,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -169,19 +177,6 @@ fun AskScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-
-            // On-device model download progress
-            if (
-                onDeviceModelState.availability ==
-                OnDeviceAvailability.DOWNLOADING
-            ) {
-                item(key = "model_download") {
-                    OnDeviceDownloadProgress(
-                        downloaded = onDeviceModelState.bytesDownloaded,
-                        total = onDeviceModelState.bytesToDownload
-                    )
-                }
-            }
 
             // LiteRT-LM initialization progress
             if (
@@ -543,7 +538,8 @@ private fun AssistantAvatar() {
 @Composable
 private fun OnDeviceDownloadProgress(
     downloaded: Long,
-    total: Long?
+    total: Long?,
+    modifier: Modifier = Modifier,
 ) {
     val progress = total
         ?.takeIf { it > 0 }
@@ -553,7 +549,7 @@ private fun OnDeviceDownloadProgress(
         }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(

@@ -22,7 +22,7 @@ val appModule = module {
     single {
         OnDeviceModelManager(
             context = androidContext(),
-            modelUrl = "put url to model"
+            modelUrl = "https://pub-49d1704b74144aaabcb5e4e6a63132c5.r2.dev/gemma3-1b-it-int4.litertlm"
         )
     }
 
