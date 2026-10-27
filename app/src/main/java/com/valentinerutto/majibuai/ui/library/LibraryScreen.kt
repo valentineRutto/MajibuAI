@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
@@ -95,11 +94,13 @@ fun LibraryScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Bookmark,
-                        contentDescription = null,
-                        tint = MintPrimary,
-                        modifier = Modifier.size(24.dp),
+                    Image(
+                        painter = painterResource(R.drawable.ic_launcher_mascot),
+                        contentDescription = "MajibuAI logo",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape),
                     )
                     Text(
                         text = "Library",

@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Lightbulb
@@ -81,7 +80,6 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun AskScreen(
     viewModel: MajibuViewModel = koinViewModel(),
-    onBackClick: () -> Unit = {},
     onSaveAnswer: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -156,7 +154,6 @@ fun AskScreen(
         AskTopBar(
             selectedProvider = uiState.selectedProvider,
             onProviderSelected = viewModel::selectProvider,
-            onBackClick = onBackClick,
         )
         if (onDeviceModelState.availability == OnDeviceAvailability.DOWNLOADING) {
             OnDeviceDownloadProgress(
@@ -277,7 +274,6 @@ fun AskScreen(
 private fun AskTopBar(
     selectedProvider: AiProvider,
     onProviderSelected: (AiProvider) -> Unit,
-    onBackClick: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -290,15 +286,20 @@ private fun AskTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-            }
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_mascot),
+                contentDescription = "MajibuAI logo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape),
+            )
             Text(
                 text = "Ask",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(start = 4.dp),
+                modifier = Modifier.padding(start = 10.dp),
             )
         }
 
