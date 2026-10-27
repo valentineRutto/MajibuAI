@@ -7,7 +7,7 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
-import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.util.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
 import com.valentinerutto.majibuai.data.ai.models.AiError

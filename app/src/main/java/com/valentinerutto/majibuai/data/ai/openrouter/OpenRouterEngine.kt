@@ -1,6 +1,6 @@
 package com.valentinerutto.majibuai.data.ai.openrouter
 
-import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.util.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiError
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse

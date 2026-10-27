@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
-import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.util.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
 import com.valentinerutto.majibuai.data.ai.models.toDisplayMessage
 import com.valentinerutto.majibuai.ui.MajibuViewModel

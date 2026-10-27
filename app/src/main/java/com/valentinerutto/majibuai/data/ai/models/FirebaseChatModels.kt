@@ -1,6 +1,6 @@
 package com.valentinerutto.majibuai.data.ai.models
 
-import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.util.AiProvider
 import java.util.UUID
 
 enum class ChatRole {

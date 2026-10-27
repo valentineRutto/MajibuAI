@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.valentinerutto.majibuai.data.ai.models.AiError
 import com.valentinerutto.majibuai.data.ai.AiRepository
-import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.util.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiResult
 import com.valentinerutto.majibuai.data.ai.models.ChatMessage
 import com.valentinerutto.majibuai.data.ai.models.ChatRole

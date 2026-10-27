@@ -10,11 +10,14 @@ import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterApi
 import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterEngine
 import com.valentinerutto.majibuai.network.RetrofitClient
 import com.valentinerutto.majibuai.ui.MajibuViewModel
+import com.valentinerutto.majibuai.util.NetworkMonitor
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.scope.get
 import org.koin.dsl.module
 import retrofit2.Retrofit
+import kotlin.coroutines.EmptyCoroutineContext.get
 
 val appModule = module {
     single<FirebaseGeminiAIEngine> { FirebaseGeminiEngine() }
@@ -29,8 +32,8 @@ val appModule = module {
     single {
         LiteRTLmEngine(modelManager = get())
     }
-
-    single { AiRepository(get(),get(),get()) }
+    single { NetworkMonitor(androidContext()) }
+    single { AiRepository(get(),get(),get(),get()) }
 
 
 

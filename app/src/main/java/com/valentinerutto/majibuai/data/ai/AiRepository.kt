@@ -10,12 +10,15 @@ import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
 import com.valentinerutto.majibuai.data.ai.models.toAiError
 import com.valentinerutto.majibuai.data.ai.ondevice.LiteRTLmEngine
 import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterEngine
+import com.valentinerutto.majibuai.util.AiProvider
+import com.valentinerutto.majibuai.util.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlin.coroutines.cancellation.CancellationException
 
-class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private val openRouterEngine: OpenRouterEngine, private val liteRTLmEngine: LiteRTLmEngine) {
+class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private val openRouterEngine: OpenRouterEngine, private val liteRTLmEngine: LiteRTLmEngine,    private val networkMonitor: NetworkMonitor
+) {
 
     val onDeviceModelState = liteRTLmEngine.modelState
 
@@ -41,7 +44,107 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
             AiProvider.FIREBASE_AI -> explainStreamFirebaseAi(messages)
             AiProvider.OPENROUTER -> explainStreamOpenRouterAi(messages)
             AiProvider.ON_DEVICE -> explainStreamOndeviceAi(messages)
+            AiProvider.HYBRID ->             explainStreamHybridAi(messages)
+
         }
+
+    fun explainStreamHybridAi(
+        messages: List<ChatMessage>
+    ): Flow<AiResult<String>> = flow {
+
+        val isOnline = networkMonitor.isOnline()
+
+        val providers = buildList {
+
+            if (isOnline) {
+                add(AiProvider.FIREBASE_AI)
+                add(AiProvider.OPENROUTER)
+            }
+
+            if (
+                onDeviceModelState.value.availability ==
+                OnDeviceAvailability.AVAILABLE
+            ) {
+                add(AiProvider.ON_DEVICE)
+            }
+        }
+
+        if (providers.isEmpty()) {
+            emit(
+                AiResult.Failure(
+                    AiError.OnDeviceModelNotReady
+                )
+            )
+            return@flow
+        }
+
+        var lastError: AiError = AiError.EmptyResponse
+
+        for (provider in providers) {
+
+            var hasEmittedText = false
+            var providerError: AiError? = null
+
+            val providerFlow = when (provider) {
+                AiProvider.FIREBASE_AI ->
+                    explainStreamFirebaseAi(messages)
+
+                AiProvider.OPENROUTER ->
+                    explainStreamOpenRouterAi(messages)
+
+                AiProvider.ON_DEVICE ->
+                    explainStreamOndeviceAi(messages)
+
+                AiProvider.HYBRID ->
+                    error("Nested hybrid routing is not supported")
+            }
+
+            providerFlow.collect { result ->
+
+                when (result) {
+
+                    is AiResult.Success -> {
+                        if (result.value.isNotEmpty()) {
+                            hasEmittedText = true
+                            emit(result)
+                        }
+                    }
+
+                    is AiResult.Failure -> {
+                        providerError = result.error
+                    }
+                }
+            }
+
+            if (hasEmittedText) {
+                // Never fallback after partial output.
+                // If the stream failed, surface the error.
+                providerError?.let { error ->
+                    emit(AiResult.Failure(error))
+                }
+                return@flow
+            }
+
+            // No response text: safe to try the next provider.
+            if (providerError != null) {
+                lastError = providerError!!
+            }
+        }
+
+        emit(AiResult.Failure(lastError))
+
+    }.catch { exception ->
+
+        if (exception is CancellationException) {
+            throw exception
+        }
+
+        emit(
+            AiResult.Failure(
+                    AiError.Unknown(exception.message)
+            )
+        )
+    }
 
     suspend fun explainStreamFirebaseAi(messages: List<ChatMessage>): Flow<AiResult<String>> =
         flow {
