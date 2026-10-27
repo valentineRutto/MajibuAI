@@ -1,7 +1,6 @@
 package com.valentinerutto.majibuai.data.ai.ondevice
 
 import android.content.Context
-import com.google.firebase.ai.DownloadStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
@@ -11,9 +10,8 @@ import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import kotlin.io.path.createTempDirectory
 
-class OnDeviceModeManager(context: Context,private val modelUrl: String){
+class OnDeviceModelManager(context: Context, private val modelUrl: String){
     private val modelFile = File(
         context.filesDir,
         "models/majibu-model.litertlm"
