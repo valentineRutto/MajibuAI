@@ -31,6 +31,20 @@ sealed interface AiError {
         val message: String?,
         val details: AiErrorDetails? = null,
     ) : AiError
+
+    data object OnDeviceModelNotReady : AiError
+
+    data class OnDeviceDownloadFailed(
+        val reason: String? = null
+    ) : AiError
+
+    data class OnDeviceInitializationFailed(
+        val reason: String? = null
+    ) : AiError
+
+    data class OnDeviceInferenceFailed(
+        val reason: String? = null
+    ) : AiError
 }
 
 data class AiErrorDetails(
@@ -103,4 +117,17 @@ fun AiError.toDisplayMessage(): String = when (this) {
     is AiError.ContentPolicyViolation -> "The AI provider could not answer that request."
     is AiError.ProviderUnavailable -> "The AI service is unavailable right now. Try again shortly."
     is AiError.Unknown -> "Something went wrong. Please try again."
+    // On-device errors
+   is AiError.OnDeviceModelNotReady ->
+        "Download and initialize the on-device AI model first."
+
+    is AiError.OnDeviceDownloadFailed ->
+        "Could not download the on-device AI model. Check your connection and try again."
+
+    is AiError.OnDeviceInitializationFailed ->
+        "Could not initialize the on-device AI model. Try again."
+
+    is AiError.OnDeviceInferenceFailed ->
+        "On-device AI could not generate a response. Please try again."
+
 }

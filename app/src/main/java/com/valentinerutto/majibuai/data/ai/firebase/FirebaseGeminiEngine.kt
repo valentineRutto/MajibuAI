@@ -8,6 +8,8 @@ import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
+import com.valentinerutto.majibuai.util.Constants.FIERBASE_MODEL_ID
+import com.valentinerutto.majibuai.util.Constants.MAJIBU_SYSTEM_INSTRUCTION
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -16,7 +18,7 @@ interface FirebaseGeminiAIEngine {
 }
 
 class FirebaseGeminiEngine(
-    private val modelId: String = DEFAULT_MODEL_ID,
+    private val modelId: String = FIERBASE_MODEL_ID,
 ) : FirebaseGeminiAIEngine {
     private val model by lazy {
 
@@ -66,20 +68,5 @@ class FirebaseGeminiEngine(
         }
     }
 
-    private companion object {
-        const val DEFAULT_MODEL_ID = "gemini-3.5-flash"
 
-        val MAJIBU_SYSTEM_INSTRUCTION = """
-        You are MajibuAI, a friendly technical learning assistant.
-
-        Your responsibilities:
-        - Explain technical concepts accurately.
-        - Use simple language before introducing advanced concepts.
-        - Provide Kotlin , jetpack compose examples for Android questions when neccessary.
-        - Structure explanations using headings and bullet points.
-        - Include practical examples where helpful.
-        - Keep answers concise unless the user asks for detail.
-        - Admit uncertainty rather than inventing facts.
-    """.trimIndent()
-    }
 }

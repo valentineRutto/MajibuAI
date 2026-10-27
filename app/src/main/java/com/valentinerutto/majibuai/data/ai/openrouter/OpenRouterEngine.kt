@@ -9,6 +9,8 @@ import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterMessage
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterRequest
 import com.valentinerutto.majibuai.data.ai.models.OpenRouterStreamChunk
+import com.valentinerutto.majibuai.util.Constants.MAJIBU_SYSTEM_INSTRUCTION
+import com.valentinerutto.majibuai.util.Constants.OPENROUTER_MODEL_ID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -22,7 +24,6 @@ class OpenRouterEngine(
     private val api: OpenRouterApi,
     private val json: Json
 ) {
-
 
      fun streamChat(request: AiChatRequest): Flow<AiChatResponse> = flow {
         val latestMessage = request.messages.lastOrNull()
@@ -56,7 +57,7 @@ class OpenRouterEngine(
 
         val httpResponse = api.streamChatCompletions(
             OpenRouterRequest(
-                model = MODEL_ID,
+                model = OPENROUTER_MODEL_ID,
                 messages = messages,
                 stream = true
             )
@@ -102,7 +103,7 @@ class OpenRouterEngine(
                         AiChatResponse(
                             text = text,
                             provider = AiProvider.OPENROUTER,
-                            modelId = chunk.model ?: MODEL_ID,
+                            modelId = chunk.model ?: OPENROUTER_MODEL_ID,
                         )
                     )
                 }
@@ -117,16 +118,5 @@ class OpenRouterEngine(
 
     }.flowOn(Dispatchers.IO)
 
-    private companion object {
-        private const val MODEL_ID =
-            "nvidia/nemotron-3.5-lightning:free"
 
-        val MAJIBU_SYSTEM_INSTRUCTION = """
-            You are MajibuAI, a friendly technical learning assistant.
-            Explain technical concepts accurately, using simple language before advanced details.
-            Provide Kotlin and Jetpack Compose examples for Android questions when useful.
-            Structure explanations with headings and bullets when they improve readability.
-            Keep answers concise unless the user asks for detail, and admit uncertainty rather than inventing facts.
-        """.trimIndent()
-    }
 }
