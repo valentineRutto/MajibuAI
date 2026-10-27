@@ -120,17 +120,15 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
             )
         )
 
-    }.catch { exception ->
+    }.catch { e ->
 
-        if (exception is CancellationException) {
-            throw exception
+        if (e is CancellationException) throw e
+        val error = when (e) {
+            is AiProviderException -> e.error
+            is Exception -> e.toAiError()
+            else -> AiError.Unknown(e.message)
         }
-
-        emit(
-            AiResult.Failure(
-                    AiError.Unknown(exception.message)
-            )
-        )
+        emit(AiResult.Failure(error))
     }
 
     suspend fun explainStreamFirebaseAi(messages: List<ChatMessage>): Flow<AiResult<String>> =
