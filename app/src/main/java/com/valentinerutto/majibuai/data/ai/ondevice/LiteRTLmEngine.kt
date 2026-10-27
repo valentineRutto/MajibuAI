@@ -6,17 +6,20 @@ import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.Message
 import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiChatRequest
 import com.valentinerutto.majibuai.data.ai.models.AiChatResponse
 import com.valentinerutto.majibuai.data.ai.models.AiError
 import com.valentinerutto.majibuai.data.ai.models.AiProviderException
+import com.valentinerutto.majibuai.data.ai.models.ChatMessage
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
 import com.valentinerutto.majibuai.data.ai.models.OnDeviceModelState
 import com.valentinerutto.majibuai.data.ai.models.toDisplayMessage
 import com.valentinerutto.majibuai.util.Constants.LITERTLM_MODEL_ID
 import com.valentinerutto.majibuai.util.Constants.MAJIBU_SYSTEM_INSTRUCTION
+import com.valentinerutto.majibuai.util.Constants.MAX_HISTORY_MESSAGES
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -150,9 +153,12 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
                 ?: throw AiProviderException(
                     AiError.OnDeviceModelNotReady
                 )
+            val history = buildConversationHistory(request.messages)
 
             val config = ConversationConfig(
-                systemInstruction = Contents.of(MAJIBU_SYSTEM_INSTRUCTION)
+                systemInstruction = Contents.of(MAJIBU_SYSTEM_INSTRUCTION),
+                initialMessages = history
+
             )
 
             try {
@@ -206,5 +212,23 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
     }
     fun cancelGeneration() {
         activeConversation?.cancelProcess()
+    }
+    private fun buildConversationHistory(
+        messages: List<ChatMessage>
+    ): List<Message> {
+
+        return messages
+            .dropLast(1)
+            .filter { it.content.isNotBlank() }
+            .takeLast(MAX_HISTORY_MESSAGES)
+            .map { message ->
+                when (message.role) {
+                    ChatRole.USER ->
+                        Message.user(message.content)
+
+                    ChatRole.ASSISTANT ->
+                        Message.model(message.content)
+                }
+            }
     }
 }

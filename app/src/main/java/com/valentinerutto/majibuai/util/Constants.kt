@@ -7,6 +7,8 @@ object Constants {
         "nvidia/nemotron-3.5-lightning:free"
     const val LITERTLM_MODEL_ID = "gemma3-1b-it-int4"
 
+    const val MAX_HISTORY_MESSAGES = 6
+
     val MAJIBU_SYSTEM_INSTRUCTION = """
     You are MajibuAI, a friendly AI assistant specializing
     in technology, computer science, and scientific learning.

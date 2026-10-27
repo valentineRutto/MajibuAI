@@ -241,7 +241,10 @@ class MajibuViewModel(
         )
 
         // Send conversation history without the empty assistant message
-        val requestMessages = currentState.conversation + userMessage
+        val requestMessages =
+            currentState.conversation
+                .filter { it.content.isNotBlank() } +
+                    userMessage
 
         _uiState.update {
             it.copy(
