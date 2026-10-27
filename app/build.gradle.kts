@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.ai)
+    implementation(libs.litertlm.android)
     implementation(libs.firebase.appcheck.debug)
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.orbmotion) {
