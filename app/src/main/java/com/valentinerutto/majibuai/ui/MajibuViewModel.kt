@@ -11,6 +11,7 @@ import com.valentinerutto.majibuai.data.ai.models.ChatMessage
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
 import com.valentinerutto.majibuai.data.ai.models.toAiError
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -333,6 +334,18 @@ private fun handleError(
 }
 
     fun stopGenerating() {
-        streamingJob?.cancel()
+        val job = streamingJob ?: return
+        _uiState.update { it.copy(isLoading = false) }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (_uiState.value.selectedProvider == AiProvider.ON_DEVICE) {
+                    repository.cancelOnDeviceGeneration()
+                }
+            } finally {
+                job.cancel()
+            }
+        }
+
+
     }
 }

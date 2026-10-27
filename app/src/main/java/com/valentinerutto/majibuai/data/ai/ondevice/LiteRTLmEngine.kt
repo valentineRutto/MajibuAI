@@ -2,6 +2,7 @@ package com.valentinerutto.majibuai.data.ai.ondevice
 
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -34,7 +35,8 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
     private val _modelState = MutableStateFlow(OnDeviceModelState())
 
     val modelState = _modelState.asStateFlow()
-
+    @Volatile
+    private var activeConversation: Conversation? = null
     suspend fun refreshModelStatus() = mutex.withLock {
         _modelState.value = OnDeviceModelState(
 
@@ -155,6 +157,8 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
 
             try {
                 localEngine.createConversation(config).use { conversation ->
+                    activeConversation = conversation
+
                     conversation.sendMessageAsync(question).collect { chunk ->
                         val text = chunk.toString()
 
@@ -171,6 +175,9 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
                 }
 
             } catch (e: CancellationException) {
+
+                runCatching { activeConversation?.cancelProcess() }
+
                 throw e
 
             } catch (e: Exception) {
@@ -178,6 +185,8 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
                     AiError.OnDeviceInferenceFailed(e.message),
                     e
                 )
+            } finally {
+                activeConversation = null
             }
         }
     }.flowOn(Dispatchers.Default)
@@ -195,5 +204,7 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
             }
         )
     }
-
+    fun cancelGeneration() {
+        activeConversation?.cancelProcess()
+    }
 }

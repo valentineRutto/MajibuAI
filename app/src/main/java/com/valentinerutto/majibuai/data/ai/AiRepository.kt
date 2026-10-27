@@ -121,6 +121,10 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
 
         emit(AiResult.Failure(error))
     }
+
+    fun cancelOnDeviceGeneration() {
+        liteRTLmEngine.cancelGeneration()
+    }
 }
 
 
