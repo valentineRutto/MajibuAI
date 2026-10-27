@@ -2,7 +2,7 @@ package com.valentinerutto.majibuai.util
 
 object Constants {
 
-    const val FIERBASE_MODEL_ID = "gemini-3.5-flash"
+    const val FIERBASE_MODEL_ID = "gemini-3.5-flash-lite"
      const val OPENROUTER_MODEL_ID =
         "nvidia/nemotron-3.5-lightning:free"
     const val LITERTLM_MODEL_ID = "gemma3-1b-it-int4"
