@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -149,7 +150,8 @@ fun AskScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(AppBackground),
+            .background(AppBackground)
+            .imePadding(),
     ) {
         AskTopBar(
             selectedProvider = uiState.selectedProvider,
@@ -468,6 +470,8 @@ private fun MessageComposer(
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
 ) {
+    val canSend = enabled && value.isNotBlank()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -502,10 +506,14 @@ private fun MessageComposer(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(MintPrimary),
-                enabled = enabled && value.isNotBlank(),
+                    .background(if (canSend) MintPrimary else BorderLight),
+                enabled = canSend,
             ) {
-                Icon(Icons.Filled.Send, contentDescription = "Send question", tint = Color.White)
+                Icon(
+                    Icons.Filled.Send,
+                    contentDescription = "Send question",
+                    tint = if (canSend) Color.White else TextMuted,
+                )
             }
         }
     }
