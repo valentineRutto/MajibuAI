@@ -32,6 +32,7 @@ class LiteRTLmEngine (private val modelManager: OnDeviceModelManager){
     private var engine: Engine? = null
 
     private val _modelState = MutableStateFlow(OnDeviceModelState())
+
     val modelState = _modelState.asStateFlow()
 
     suspend fun refreshModelStatus() = mutex.withLock {

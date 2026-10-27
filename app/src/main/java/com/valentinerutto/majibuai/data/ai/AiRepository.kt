@@ -6,6 +6,8 @@ import com.valentinerutto.majibuai.data.ai.models.AiError
 import com.valentinerutto.majibuai.data.ai.models.AiProviderException
 import com.valentinerutto.majibuai.data.ai.models.AiResult
 import com.valentinerutto.majibuai.data.ai.models.ChatMessage
+import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
+import com.valentinerutto.majibuai.data.ai.models.toAiError
 import com.valentinerutto.majibuai.data.ai.ondevice.LiteRTLmEngine
 import com.valentinerutto.majibuai.data.ai.openrouter.OpenRouterEngine
 import kotlinx.coroutines.flow.Flow
@@ -15,12 +17,30 @@ import kotlin.coroutines.cancellation.CancellationException
 
 class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private val openRouterEngine: OpenRouterEngine, private val liteRTLmEngine: LiteRTLmEngine) {
 
+    val onDeviceModelState = liteRTLmEngine.modelState
+
+    suspend fun prepareOnDevice() {
+        liteRTLmEngine.refreshModelStatus()
+
+        if (
+            onDeviceModelState.value.availability ==
+            OnDeviceAvailability.DOWNLOADED
+        ) {
+            liteRTLmEngine.initialize()
+        }
+    }
+
+    suspend fun downloadOnDeviceModel() {
+        liteRTLmEngine.downloadModel()
+    }
+
 
     suspend fun explain(messages: List<ChatMessage>, provider: AiProvider): Flow<AiResult<String>> =
+
         when (provider) {
             AiProvider.FIREBASE_AI -> explainStreamFirebaseAi(messages)
             AiProvider.OPENROUTER -> explainStreamOpenRouterAi(messages)
-            AiProvider.ON_DEVICE -> flow { emit(AiResult.Failure(AiError.ProviderNotConfigured)) }
+            AiProvider.ON_DEVICE -> explainStreamOndeviceAi(messages)
         }
 
     suspend fun explainStreamFirebaseAi(messages: List<ChatMessage>): Flow<AiResult<String>> =
@@ -65,6 +85,46 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
         emit(AiResult.Failure(error ?: AiError.Unknown(e.message.orEmpty())))
     }
 
+    fun explainStreamOndeviceAi(messages: List<ChatMessage>): Flow<AiResult<String>> = flow {
+        val request = AiChatRequest(messages)
+
+        var hasContent = false
+
+        liteRTLmEngine.streamChat(request).collect { response ->
+            if (response.text.isNotEmpty()) {
+                emit(AiResult.Success(response.text))
+
+                if (response.text.isNotBlank()) {
+                    hasContent = true
+                }
+            }
+        }
+
+        if (!hasContent) {
+            emit(
+                AiResult.Failure(
+                    AiError.EmptyResponse
+                )
+            )
+        }
+
+    }.catch { exception ->
+
+        if (exception is CancellationException) {
+            throw exception
+        }
+
+        val error = when (exception) {
+            is Exception -> exception.toAiError()
+            else -> AiError.Unknown(exception.message)
+        }
+
+        emit(AiResult.Failure(error))
+    }
 }
+
+
+
+
 
 

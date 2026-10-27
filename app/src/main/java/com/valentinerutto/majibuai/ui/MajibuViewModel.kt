@@ -9,6 +9,8 @@ import com.valentinerutto.majibuai.data.ai.AiProvider
 import com.valentinerutto.majibuai.data.ai.models.AiResult
 import com.valentinerutto.majibuai.data.ai.models.ChatMessage
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
+import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
+import com.valentinerutto.majibuai.data.ai.models.toAiError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,8 @@ data class AskUiState(
     val isLoading: Boolean = false,
     val error: AiError? = null,
     val selectedProvider: AiProvider = AiProvider.OPENROUTER,
+    val showModelDownloadDialog: Boolean = false
+
 )
 
 data class SavedQuestion(
@@ -41,6 +45,28 @@ class MajibuViewModel(
     private val _savedQuestions = MutableStateFlow<List<SavedQuestion>>(emptyList())
     val savedQuestions = _savedQuestions.asStateFlow()
     private var streamingJob: Job? = null
+
+    val onDeviceModelState = repository.onDeviceModelState
+    private var modelPreparationJob: Job? = null
+    private var providerSelectionVersion = 0
+    init {
+       modelPreparationJob= viewModelScope.launch {
+            try {
+                repository.prepareOnDevice()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.toAiError())
+                }
+            }
+        }
+    }
+
+
+
+
+
 
     fun saveCurrentAnswer() {
         val conversation = _uiState.value.conversation
@@ -77,9 +103,126 @@ class MajibuViewModel(
     }
 
     fun selectProvider(provider: AiProvider) {
-        _uiState.update { it.copy(selectedProvider = provider, error = null) }
+        val selectionVersion = ++providerSelectionVersion
+
+        if (_uiState.value.isLoading) return
+
+        if (provider != AiProvider.ON_DEVICE) {
+            _uiState.update {
+                it.copy(
+                    selectedProvider = provider,
+                    showModelDownloadDialog = false,
+                    error = null
+                )
+            }
+            return
+        }
+        when (onDeviceModelState.value.availability) {
+
+            OnDeviceAvailability.AVAILABLE -> {
+                selectOnDevice()
+            }
+
+            OnDeviceAvailability.DOWNLOADED -> {
+                initializeOnDevice()
+            }
+
+            OnDeviceAvailability.CHECKING -> {
+                viewModelScope.launch {
+                    modelPreparationJob?.join()
+
+                    selectProvider(AiProvider.ON_DEVICE)
+                }
+            }
+
+            OnDeviceAvailability.DOWNLOADING,
+            OnDeviceAvailability.INITIALIZING -> {
+                viewModelScope.launch {
+                    modelPreparationJob?.join()
+
+                    if (
+                        selectionVersion == providerSelectionVersion &&
+                        onDeviceModelState.value.availability ==
+                        OnDeviceAvailability.AVAILABLE
+                    ) {
+                        selectOnDevice()
+                    }
+                }            }
+            else -> {
+                _uiState.update {
+                    it.copy(
+                        showModelDownloadDialog = true,
+                        error = null
+                    )
+                }
+            }}
+
+
+
+    }
+    private fun selectOnDevice() {
+        _uiState.update {
+            it.copy(
+                selectedProvider = AiProvider.ON_DEVICE,
+                showModelDownloadDialog = false,
+                error = null
+            )
+        }
+    }
+    private fun initializeOnDevice() {
+        if (modelPreparationJob?.isActive == true) return
+
+        modelPreparationJob = viewModelScope.launch {
+            try {
+                repository.prepareOnDevice()
+
+                if (
+                    onDeviceModelState.value.availability ==
+                    OnDeviceAvailability.AVAILABLE
+                ) {
+                    selectOnDevice()
+                }
+
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.toAiError())
+                }
+            }
+        }
+    }
+    fun dismissModelDownloadDialog() {
+        _uiState.update {
+            it.copy(showModelDownloadDialog = false)
+        }
     }
 
+    fun confirmModelDownload() {
+        dismissModelDownloadDialog()
+
+        if (modelPreparationJob?.isActive == true) return
+
+        modelPreparationJob = viewModelScope.launch {
+            try {
+                repository.downloadOnDeviceModel()
+
+                if (
+                    onDeviceModelState.value.availability ==
+                    OnDeviceAvailability.AVAILABLE
+                ) {
+                    selectOnDevice()
+                }
+
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.toAiError())
+                }
+            }
+        }
+    }
     fun ask() {
         val currentState = _uiState.value
         val question = currentState.question.trim()
@@ -159,69 +302,6 @@ class MajibuViewModel(
         }
     }
 
-//    fun asknonstream() {
-//
-//        val currentState = _uiState.value
-//
-//        val question = _uiState.value.question.trim()
-//
-//        if (question.isBlank() || currentState.isLoading) return
-//
-//        val userMessage = ChatMessage(
-//            role = ChatRole.USER,
-//            content = question,
-//        )
-//
-//        val requestMessages = currentState.conversation + userMessage
-//
-//        _uiState.update {
-//            it.copy(
-//                question = "",
-//                conversation = requestMessages,
-//                isLoading = true,
-//                error = null,
-//            )
-//        }
-//
-//        viewModelScope.launch {
-//
-//            try {
-//
-//                when (val result = repository.explain(requestMessages, currentState.selectedProvider)) {
-//                    is AiResult.Success -> {
-//                        _uiState.update {
-//                            it.copy(
-//                                conversation = it.conversation + ChatMessage(
-//                                    role = ChatRole.ASSISTANT,
-//                                    content = result.value,
-//                                ),
-//                            )
-//                        }
-//
-//                    }
-//
-//                    is AiResult.Failure -> {
-//                        _uiState.update {
-//                            it.copy(
-//                                question = question,
-//                                conversation = it.conversation.filterNot {
-//                                    it.id == userMessage.id
-//                                },
-//                                error = result.error,
-//                            )
-//                        }
-//                    }
-//                }
-//            } catch (e: CancellationException) {
-//                throw e
-//            } finally {
-//                _uiState.update {
-//                    it.copy(isLoading = false)
-//                }
-//            }
-//
-//        }
-//    }
 private fun handleError(
     error: AiError,
     question: String,

@@ -25,12 +25,15 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -55,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.valentinerutto.majibuai.R
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.AiProvider
+import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
 import com.valentinerutto.majibuai.data.ai.models.toDisplayMessage
 import com.valentinerutto.majibuai.ui.MajibuViewModel
 import com.valentinerutto.majibuai.ui.theme.AppBackground
@@ -87,18 +91,62 @@ fun AskScreen(
     val listState = rememberLazyListState()
     val lastMessage = uiState.conversation.lastOrNull()
 
+    val onDeviceModelState by
+    viewModel.onDeviceModelState.collectAsStateWithLifecycle()
+
+    val isModelBusy = onDeviceModelState.availability in setOf(
+        OnDeviceAvailability.DOWNLOADING,
+        OnDeviceAvailability.INITIALIZING
+    )
+
+
+
     LaunchedEffect(
         uiState.conversation.size,
-        lastMessage?.content
+        lastMessage?.content,
+        onDeviceModelState.availability,
+        uiState.error
     ) {
-        if (uiState.conversation.isNotEmpty()) {
+        if (listState.layoutInfo.totalItemsCount > 0) {
             listState.animateScrollToItem(
-                listState.layoutInfo.totalItemsCount
-                    .minus(1)
-                    .coerceAtLeast(0)
+                listState.layoutInfo.totalItemsCount - 1
             )
         }
     }
+
+    if (uiState.showModelDownloadDialog) {
+
+        AlertDialog(
+            onDismissRequest = viewModel::dismissModelDownloadDialog,
+            title = {
+                Text("Download on-device AI?")
+            },
+            text = {
+                Text(
+                    "MajibuAI needs to download Gemma 3 1B " +
+                            "(approximately 1 GB). " +
+                            "After downloading, you can ask questions offline."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = viewModel::confirmModelDownload
+                ) {
+                    Text("Download")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = viewModel::dismissModelDownloadDialog
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+
+
 
     Column(
         modifier = modifier
@@ -121,6 +169,44 @@ fun AskScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+
+            // On-device model download progress
+            if (
+                onDeviceModelState.availability ==
+                OnDeviceAvailability.DOWNLOADING
+            ) {
+                item(key = "model_download") {
+                    OnDeviceDownloadProgress(
+                        downloaded = onDeviceModelState.bytesDownloaded,
+                        total = onDeviceModelState.bytesToDownload
+                    )
+                }
+            }
+
+            // LiteRT-LM initialization progress
+            if (
+                onDeviceModelState.availability ==
+                OnDeviceAvailability.INITIALIZING
+            ) {
+                item(key = "model_initializing") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement =
+                            Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        AnimatedThinkingOrb(
+                            modifier = Modifier.size(24.dp),
+                            state = OrbState.SHAPING,
+                            size = OrbSize.Custom(64.dp).floatValue,
+                            speed = 1f,
+                            color = MintDark,
+                        )
+
+                        Text("Initializing Gemma 3...")
+                    }
+                }
+            }
 
             uiState.conversation.forEachIndexed { index, message ->
 
@@ -452,4 +538,43 @@ private fun AssistantAvatar() {
             .size(34.dp)
             .clip(CircleShape),
     )
+}
+
+@Composable
+private fun OnDeviceDownloadProgress(
+    downloaded: Long,
+    total: Long?
+) {
+    val progress = total
+        ?.takeIf { it > 0 }
+        ?.let {
+            (downloaded.toFloat() / it.toFloat())
+                .coerceIn(0f, 1f)
+        }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Downloading Gemma 3 1B...",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        if (progress != null) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Text(
+                text = "${(progress * 100).toInt()}%",
+                style = MaterialTheme.typography.bodySmall
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }

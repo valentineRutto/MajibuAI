@@ -2,6 +2,7 @@ package com.valentinerutto.majibuai.ui.library
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,15 +19,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -40,28 +41,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.valentinerutto.majibuai.ui.theme.AppBackground
 import com.valentinerutto.majibuai.ui.theme.BorderLight
-import com.valentinerutto.majibuai.ui.theme.LavenderLight
 import com.valentinerutto.majibuai.ui.theme.MajibuShapes
 import com.valentinerutto.majibuai.ui.theme.MintDark
 import com.valentinerutto.majibuai.ui.theme.MintPrimary
-import com.valentinerutto.majibuai.ui.theme.PeachLight
 import com.valentinerutto.majibuai.ui.theme.SurfaceSoft
 import com.valentinerutto.majibuai.ui.theme.TextMuted
 import com.valentinerutto.majibuai.ui.theme.TextPrimary
 import com.valentinerutto.majibuai.ui.theme.TextSecondary
-import com.valentinerutto.majibuai.ui.theme.YellowLight
+import com.valentinerutto.majibuai.R
 import com.valentinerutto.majibuai.ui.SavedQuestion as SavedQuestionData
 
 @Composable
 fun LibraryScreen(
     savedQuestions: List<SavedQuestionData> = emptyList(),
-    onAddQuestion: () -> Unit = {},
-    onQuestionClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
 
@@ -108,18 +107,6 @@ fun LibraryScreen(
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
                         modifier = Modifier.padding(start = 12.dp),
-                    )
-                }
-                IconButton(
-                    onClick = onAddQuestion,
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(MajibuShapes.large),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = "Add saved question",
-                        tint = MintPrimary,
                     )
                 }
             }
@@ -172,9 +159,7 @@ fun LibraryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(filteredQuestions) { question ->
-                    SavedQuestionCard(question = question) {
-                        onQuestionClick(question.question)
-                    }
+                    SavedQuestionCard(question = question)
                 }
                 if (filteredQuestions.isEmpty()) {
                     item {
@@ -193,9 +178,11 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun SavedQuestionCard(question: SavedQuestionData, onClick: () -> Unit) {
+private fun SavedQuestionCard(question: SavedQuestionData) {
+    var expanded by remember(question.question, question.answer) { mutableStateOf(false) }
+
     Card(
-        onClick = onClick,
+        onClick = { expanded = !expanded },
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -207,14 +194,13 @@ private fun SavedQuestionCard(question: SavedQuestionData, onClick: () -> Unit) 
                 .padding(horizontal = 14.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "✦",
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_mascot),
+                contentDescription = "MajibuAI",
                 modifier = Modifier
                     .size(34.dp)
-                    .clip(MajibuShapes.extraLarge)
-                    .background(LavenderLight)
-                    .padding(7.dp),
-                color = MintDark,
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
             )
             Column(
                 modifier = Modifier
@@ -237,10 +223,32 @@ private fun SavedQuestionCard(question: SavedQuestionData, onClick: () -> Unit) 
                 )
             }
             Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
+                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = if (expanded) "Hide answer" else "Show answer",
                 tint = MintDark,
             )
+        }
+
+        if (expanded) {
+            HorizontalDivider(color = BorderLight)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "Answer",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MintDark,
+                )
+                Text(
+                    text = question.answer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary,
+                )
+            }
         }
     }
 }
