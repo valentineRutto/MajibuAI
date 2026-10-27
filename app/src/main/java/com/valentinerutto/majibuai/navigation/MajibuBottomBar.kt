@@ -3,10 +3,8 @@ package com.valentinerutto.majibuai.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -38,12 +36,6 @@ private val bottomDestinations = listOf(
         "Library",
         Icons.Filled.MenuBook,
         Icons.Outlined.MenuBook,
-    ),
-    BottomDestination(
-        MajibuRoute.Settings.route,
-        "Settings",
-        Icons.Filled.Settings,
-        Icons.Outlined.Settings,
     ),
 )
 
