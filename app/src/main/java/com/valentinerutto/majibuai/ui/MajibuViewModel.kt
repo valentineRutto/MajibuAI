@@ -26,7 +26,8 @@ data class AskUiState(
     val isLoading: Boolean = false,
     val error: AiError? = null,
     val selectedProvider: AiProvider = AiProvider.OPENROUTER,
-    val showModelDownloadDialog: Boolean = false
+    val showModelDownloadDialog: Boolean = false,
+    val interruptedQuestion: String? = null
 
 )
 
@@ -101,6 +102,7 @@ class MajibuViewModel(
     }
 
     fun selectProvider(provider: AiProvider) {
+
         val selectionVersion = ++providerSelectionVersion
 
         if (_uiState.value.isLoading) return
@@ -205,15 +207,16 @@ class MajibuViewModel(
 
         if (modelPreparationJob?.isActive == true) return
 
+        val selectionVersion = providerSelectionVersion
+
         modelPreparationJob = viewModelScope.launch {
             try {
-                _uiState.update {
-                    it.copy(error = null)
-                }
+                _uiState.update { it.copy(error = null) }
 
                 repository.downloadOnDeviceModel()
 
                 if (
+                    selectionVersion == providerSelectionVersion &&
                     onDeviceModelState.value.availability ==
                     OnDeviceAvailability.AVAILABLE
                 ) {
@@ -222,7 +225,6 @@ class MajibuViewModel(
 
             } catch (e: CancellationException) {
                 throw e
-
             } catch (e: Exception) {
                 if (
                     onDeviceModelState.value.availability !=
@@ -270,7 +272,8 @@ class MajibuViewModel(
                 question = "",
                 conversation = requestMessages + assistantMessage,
                 isLoading = true,
-                error = null
+                error = null,        interruptedQuestion = null
+
             )
         }
 
@@ -288,7 +291,8 @@ class MajibuViewModel(
                                     conversation = state.conversation.map { message ->
                                         if (message.id == assistantMessage.id) {
                                             message.copy(
-                                                content = message.content + result.value
+                                                content = message.content + result.value,
+                                                provider = result.provider ?: message.provider
                                             )
                                         } else {
                                             message
@@ -306,6 +310,7 @@ class MajibuViewModel(
                                 assistantMessage = assistantMessage
                             )
                         }
+
                     }
                 }
             } catch (e: CancellationException) {
@@ -340,7 +345,9 @@ private fun handleError(
 
         if (hasPartialAnswer) {
             // Keep the partial answer if streaming already started
-            state.copy(error = error)
+            state.copy(error = error,   interruptedQuestion = question
+            )
+
         } else {
             // Restore the question if nothing was generated
             state.copy(
@@ -349,12 +356,48 @@ private fun handleError(
                     it.id == userMessage.id ||
                             it.id == assistantMessage.id
                 },
-                error = error
+                error = error,
+                interruptedQuestion = null
+
             )
         }
     }
 }
+    fun retryInterruptedQuestion() {
+        val state = _uiState.value
 
+        if (state.isLoading) return
+
+        val question = state.interruptedQuestion ?: return
+        if (state.selectedProvider != AiProvider.HYBRID) return
+
+        val lastAssistantIndex = state.conversation
+            .indexOfLast { it.role == ChatRole.ASSISTANT }
+
+        if (lastAssistantIndex < 1) return
+
+        val userMessage = state.conversation[lastAssistantIndex - 1]
+        val assistantMessage = state.conversation[lastAssistantIndex]
+
+        if (
+            userMessage.role != ChatRole.USER ||
+            userMessage.content != question
+        ) return
+
+        _uiState.update {
+            it.copy(
+                question = question,
+                conversation = it.conversation.filterNot { message ->
+                    message.id == userMessage.id ||
+                            message.id == assistantMessage.id
+                },
+                interruptedQuestion = null,
+                error = null
+            )
+        }
+
+        ask()
+    }
     fun stopGenerating() {
         val job = streamingJob ?: return
         _uiState.update { it.copy(isLoading = false) }

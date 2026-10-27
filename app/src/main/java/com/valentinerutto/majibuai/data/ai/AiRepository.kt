@@ -52,86 +52,73 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
         messages: List<ChatMessage>
     ): Flow<AiResult<String>> = flow {
 
-        val isOnline = networkMonitor.isOnline()
+        var lastError: AiError? = null
 
-        val providers = buildList {
-
-            if (isOnline) {
-                add(AiProvider.FIREBASE_AI)
-                add(AiProvider.OPENROUTER)
-            }
-
-            if (
-                onDeviceModelState.value.availability ==
-                OnDeviceAvailability.AVAILABLE
-            ) {
-                add(AiProvider.ON_DEVICE)
-            }
-        }
-
-        if (providers.isEmpty()) {
-            emit(
-                AiResult.Failure(
-                    AiError.OnDeviceModelNotReady
-                )
-            )
-            return@flow
-        }
-
-        var lastError: AiError = AiError.EmptyResponse
-
-        for (provider in providers) {
-
-            var hasEmittedText = false
-            var providerError: AiError? = null
+        // Connectivity can change during a request, so check before each cloud provider.
+        val cloudProviders = listOf(AiProvider.FIREBASE_AI, AiProvider.OPENROUTER)
+        for (provider in cloudProviders) {
+            if (!networkMonitor.isOnline()) break
 
             val providerFlow = when (provider) {
-                AiProvider.FIREBASE_AI ->
-                    explainStreamFirebaseAi(messages)
-
-                AiProvider.OPENROUTER ->
-                    explainStreamOpenRouterAi(messages)
-
-                AiProvider.ON_DEVICE ->
-                    explainStreamOndeviceAi(messages)
-
-                AiProvider.HYBRID ->
-                    error("Nested hybrid routing is not supported")
+                AiProvider.FIREBASE_AI -> explainStreamFirebaseAi(messages)
+                AiProvider.OPENROUTER -> explainStreamOpenRouterAi(messages)
+                else -> error("Expected a cloud provider")
             }
 
+            var providerEmittedText = false
+            var providerError: AiError? = null
+
             providerFlow.collect { result ->
-
                 when (result) {
-
                     is AiResult.Success -> {
                         if (result.value.isNotEmpty()) {
-                            hasEmittedText = true
+                            providerEmittedText = true
                             emit(result)
                         }
                     }
-
-                    is AiResult.Failure -> {
-                        providerError = result.error
-                    }
+                    is AiResult.Failure -> providerError = result.error
                 }
             }
 
-            if (hasEmittedText) {
-                // Never fallback after partial output.
-                // If the stream failed, surface the error.
-                providerError?.let { error ->
-                    emit(AiResult.Failure(error))
-                }
+            // Once text is visible, keep the partial answer and let the user choose to retry.
+            // The ViewModel uses this failure to show the interrupted-response UI.
+            if (providerError != null && providerEmittedText) {
+                emit(AiResult.Failure(providerError!!))
                 return@flow
             }
 
-            // No response text: safe to try the next provider.
+            // A provider that completed after emitting text succeeded.
+            if (providerError == null && providerEmittedText) return@flow
             if (providerError != null) {
-                lastError = providerError!!
+                lastError = providerError
             }
         }
 
-        emit(AiResult.Failure(lastError))
+        // Prefer local inference whenever the connection is now offline. Also use it as
+        // the final fallback if both cloud providers failed while the device stayed online.
+        if (
+            onDeviceModelState.value.availability == OnDeviceAvailability.AVAILABLE
+        ) {
+            var onDeviceError: AiError? = null
+            explainStreamOndeviceAi(messages).collect { result ->
+                when (result) {
+                    is AiResult.Success -> emit(result)
+                    is AiResult.Failure -> onDeviceError = result.error
+                }
+            }
+            onDeviceError?.let { emit(AiResult.Failure(it)) }
+            return@flow
+        }
+
+        emit(
+            AiResult.Failure(
+                if (!networkMonitor.isOnline()) {
+                    AiError.OnDeviceModelNotReady
+                } else {
+                    lastError ?: AiError.EmptyResponse
+                }
+            )
+        )
 
     }.catch { exception ->
 
@@ -154,7 +141,8 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
 
             firebaseEngine.streamChat(request).collect { response ->
                 if (response.text.isNotEmpty()) {
-                    emit(AiResult.Success(response.text))
+                    emit(AiResult.Success(response.text,        provider = response.provider
+                    ))
                     if (response.text.isNotBlank()) hasContent = true
                 }
             }
@@ -178,7 +166,7 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
         openRouterEngine.streamChat(AiChatRequest(messages)).collect { response ->
             if (response.text.isNotEmpty()) {
                 hasContent = true
-                emit(AiResult.Success(response.text))
+                emit(AiResult.Success(response.text,        provider = response.provider))
             }
         }
         if (!hasContent) emit(AiResult.Failure(AiError.EmptyResponse))
@@ -195,7 +183,7 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
 
         liteRTLmEngine.streamChat(request).collect { response ->
             if (response.text.isNotEmpty()) {
-                emit(AiResult.Success(response.text))
+                emit(AiResult.Success(response.text,        provider = response.provider))
 
                 if (response.text.isNotBlank()) {
                     hasContent = true
@@ -218,6 +206,7 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
         }
 
         val error = when (exception) {
+            is AiProviderException -> exception.error
             is Exception -> exception.toAiError()
             else -> AiError.Unknown(exception.message)
         }

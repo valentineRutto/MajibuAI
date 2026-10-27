@@ -18,15 +18,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -37,6 +41,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -278,6 +283,8 @@ fun AskScreen(
 
                             AssistantMessage(
                                 answer = message.content,
+                                provider = message.provider,
+
                                 showSaveAction = question.isNotBlank() && message.content.isNotBlank() && !isStreaming,
                                 isSaved = savedQuestions.any {
                                     it.question == question && it.answer == message.content
@@ -299,8 +306,23 @@ fun AskScreen(
             if (uiState.isLoading && lastMessage?.content.isNullOrEmpty()) {
                 item(key = "loading") { LoadingMessage() }
             }
-            uiState.error?.let { error ->
-                item(key = "error") { ErrorMessage(error.toDisplayMessage()) }
+
+            if (
+                uiState.interruptedQuestion != null &&
+                uiState.selectedProvider == AiProvider.HYBRID
+            ) {
+                item(key = "interrupted_response") {
+                    InterruptedResponseMessage(
+                        onRetry = viewModel::retryInterruptedQuestion,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
+                uiState.error?.let { error ->
+                    item(key = "error") {
+                        ErrorMessage(error.toDisplayMessage())
+                    }
+                }
             }
         }
 
@@ -422,6 +444,7 @@ private fun AssistantMessage(
     showSaveAction: Boolean,
     isSaved: Boolean,
     onSave: () -> Unit,
+    provider: AiProvider? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -436,6 +459,11 @@ private fun AssistantMessage(
                 .background(MintCard)
                 .padding(14.dp),
         ) {
+
+            provider?.let {
+                AnsweredByProvider(provider = it, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
                     imageVector = Icons.Filled.Lightbulb,
@@ -443,6 +471,7 @@ private fun AssistantMessage(
                     tint = MintPrimary,
                     modifier = Modifier.size(20.dp),
                 )
+
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = answer,
@@ -450,6 +479,7 @@ private fun AssistantMessage(
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 21.sp,
                 )
+                Spacer(Modifier.width(8.dp))
             }
             if (showSaveAction) {
                 Spacer(Modifier.height(12.dp))
@@ -517,7 +547,41 @@ private fun ErrorMessage(error: String) {
         style = MaterialTheme.typography.bodyMedium,
     )
 }
+@Composable
+fun AnsweredByProvider(
+    provider: AiProvider,
+    modifier: Modifier = Modifier
+) {
+    val label = when (provider) {
+        AiProvider.FIREBASE_AI -> "Gemini"
+        AiProvider.OPENROUTER -> "OpenRouter"
+        AiProvider.ON_DEVICE -> "Gemma · On-device"
+        AiProvider.HYBRID -> "Hybrid"
+    }
 
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = if (provider == AiProvider.ON_DEVICE) {
+                Icons.Default.Smartphone
+            } else {
+                Icons.Default.Cloud
+            },
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Text(
+            text = "Answered by $label",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 @Composable
 private fun MessageComposer(
     value: String,
@@ -654,6 +718,64 @@ private fun OnDeviceDownloadProgress(
             Spacer(Modifier.width(8.dp))
 
             Text("Cancel Download")
+        }
+    }
+}
+@Composable
+fun InterruptedResponseMessage(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                MaterialTheme.colorScheme.errorContainer.copy(
+                    alpha = 0.35f
+                )
+            )
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.WifiOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp)
+            )
+
+            Text(
+                text = "Response interrupted",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Text(
+            text = "Generation stopped before the answer was complete. " +
+                    "Your partial answer is still visible. " +
+                    "Retry using an available AI provider.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        OutlinedButton(
+            onClick = onRetry,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+
+            Spacer(Modifier.width(8.dp))
+
+            Text("Retry with available AI")
         }
     }
 }

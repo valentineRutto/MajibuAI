@@ -6,6 +6,7 @@ import com.google.firebase.ai.type.QuotaExceededException
 import com.google.firebase.ai.type.RequestTimeoutException
 import com.google.firebase.ai.type.ServiceConnectionHandshakeFailedException
 import com.google.firebase.ai.type.ServiceDisabledException
+import com.valentinerutto.majibuai.util.AiProvider
 import java.io.IOException
 import java.net.SocketException
 import java.net.SocketTimeoutException
@@ -65,7 +66,8 @@ class AiProviderException(
 ) : Exception("AI provider request failed", cause)
 
 sealed interface AiResult<out T> {
-    data class Success<T>(val value: T) : AiResult<T>
+    data class Success<T>(val value: T,        val provider: AiProvider? = null
+    ) : AiResult<T>
     data class Failure(val error: AiError) : AiResult<Nothing>
 }
 

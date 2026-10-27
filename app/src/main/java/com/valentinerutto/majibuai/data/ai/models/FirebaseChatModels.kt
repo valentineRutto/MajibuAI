@@ -12,7 +12,8 @@ data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
     val role: ChatRole,
     val content: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),    val provider: AiProvider? = null
+
 )
 
 data class AiChatRequest(
