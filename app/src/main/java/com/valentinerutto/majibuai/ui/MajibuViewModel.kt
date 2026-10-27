@@ -66,9 +66,6 @@ class MajibuViewModel(
 
 
 
-
-
-
     fun saveCurrentAnswer() {
         val conversation = _uiState.value.conversation
 
@@ -198,7 +195,11 @@ class MajibuViewModel(
             it.copy(showModelDownloadDialog = false)
         }
     }
+    fun retryModelDownload() {
+        if (modelPreparationJob?.isActive == true) return
 
+        confirmModelDownload()
+    }
     fun confirmModelDownload() {
         dismissModelDownloadDialog()
 
@@ -206,6 +207,10 @@ class MajibuViewModel(
 
         modelPreparationJob = viewModelScope.launch {
             try {
+                _uiState.update {
+                    it.copy(error = null)
+                }
+
                 repository.downloadOnDeviceModel()
 
                 if (
@@ -217,13 +222,27 @@ class MajibuViewModel(
 
             } catch (e: CancellationException) {
                 throw e
+
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(error = e.toAiError())
+                if (
+                    onDeviceModelState.value.availability !=
+                    OnDeviceAvailability.DOWNLOAD_FAILED
+                ) {
+                    _uiState.update {
+                        it.copy(error = e.toAiError())
+                    }
                 }
             }
         }
     }
+    fun cancelModelDownload() {
+        if (
+            onDeviceModelState.value.availability ==
+            OnDeviceAvailability.DOWNLOADING
+        ) {
+            modelPreparationJob?.cancel()
+        }    }
+
     fun ask() {
         val currentState = _uiState.value
         val question = currentState.question.trim()

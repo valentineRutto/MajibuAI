@@ -2,6 +2,7 @@ package com.valentinerutto.majibuai.data.ai.ondevice
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -10,6 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.coroutines.cancellation.CancellationException
 
 class OnDeviceModelManager(context: Context, private val modelUrl: String){
     private val modelFile = File(
@@ -31,71 +33,103 @@ class OnDeviceModelManager(context: Context, private val modelUrl: String){
         modelFile
     }
 
-    suspend fun downloadModel( onProgress: (downloaded: Long, total: Long?) -> Unit
+    suspend fun downloadModel(
+        onProgress: (downloaded: Long, total: Long?) -> Unit
     ) = downloadMutex.withLock {
-        withContext(Dispatchers.IO) {
 
+        withContext(Dispatchers.IO) {
             if (isDownloaded()) return@withContext
 
             modelFile.parentFile?.let { directory ->
-                if (!directory.isDirectory && !directory.mkdirs()){
-                    throw IOException("Failed to create model directory: $directory")
-                }
-
-            }
-            temporaryFile.delete()
-
-            val connection = URL(modelUrl).openConnection() as HttpURLConnection
-
-            try {
-                connection.connectTimeout = 30_000
-                connection.readTimeout = 60_000
-                connection.instanceFollowRedirects = true
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                if (!directory.isDirectory && !directory.mkdirs()) {
                     throw IOException(
-                        "Model download failed: HTTP ${connection.responseCode}"
+                        "Failed to create model directory: $directory"
                     )
                 }
-                val totalBytes = connection.contentLengthLong
-                    .takeIf { it > 0L }
-
-                var downloadedBytes = 0L
-
-                connection.inputStream.use { input ->
-                    temporaryFile.outputStream().buffered().use { output ->
-                        val buffer = ByteArray(64 * 1024)
-
-                        while (true) {
-                            coroutineContext.ensureActive()
-
-                            val count = input.read(buffer)
-                            if (count == -1) break
-
-                            output.write(buffer, 0, count)
-                            downloadedBytes += count
-
-                            onProgress(downloadedBytes, totalBytes)
-                        }
-                    }
-                }
-                if (downloadedBytes == 0L) {
-                    throw IOException("Downloaded model is empty.")
-                }
-
-                if (totalBytes != null && downloadedBytes != totalBytes) {
-                    throw IOException("Incomplete model download.")
-                }
-
-                if (!temporaryFile.renameTo(modelFile)) {
-                    throw IOException("Could not save the downloaded model.")
-                }
-            } finally{
-                connection.disconnect()
-                temporaryFile.delete()
             }
 
+            temporaryFile.delete()
 
+            try {
+                val connection =
+                    URL(modelUrl).openConnection() as HttpURLConnection
+
+                try {
+                    connection.connectTimeout = 30_000
+                    connection.readTimeout = 60_000
+                    connection.instanceFollowRedirects = true
+
+                    val responseCode = connection.responseCode
+
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        throw IOException(
+                            "Model download failed: HTTP $responseCode"
+                        )
+                    }
+
+                    val totalBytes = connection.contentLengthLong
+                        .takeIf { it > 0L }
+
+                    var downloadedBytes = 0L
+
+                    connection.inputStream.use { input ->
+                        temporaryFile.outputStream()
+                            .buffered()
+                            .use { output ->
+
+                                val buffer = ByteArray(64 * 1024)
+
+                                while (true) {
+                                    currentCoroutineContext().ensureActive()
+
+                                    val count = input.read(buffer)
+
+                                    if (count == -1) break
+
+                                    output.write(buffer, 0, count)
+                                    downloadedBytes += count
+
+                                    onProgress(
+                                        downloadedBytes,
+                                        totalBytes
+                                    )
+                                }
+                            }
+                    }
+
+                    if (downloadedBytes == 0L) {
+                        throw IOException(
+                            "Downloaded model is empty."
+                        )
+                    }
+
+                    if (
+                        totalBytes != null &&
+                        downloadedBytes != totalBytes
+                    ) {
+                        throw IOException(
+                            "Incomplete model download. " +
+                                    "Expected $totalBytes bytes, " +
+                                    "received $downloadedBytes bytes."
+                        )
+                    }
+
+                    if (!temporaryFile.renameTo(modelFile)) {
+                        throw IOException(
+                            "Could not save the downloaded model."
+                        )
+                    }
+
+                } finally {
+                    connection.disconnect()
+                }
+
+            } catch (e: CancellationException) {
+                throw e
+
+            } finally {
+                temporaryFile.delete()
+            }
         }
     }
-
 }

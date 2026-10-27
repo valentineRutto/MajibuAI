@@ -22,7 +22,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -157,13 +159,66 @@ fun AskScreen(
             selectedProvider = uiState.selectedProvider,
             onProviderSelected = viewModel::selectProvider,
         )
-        if (onDeviceModelState.availability == OnDeviceAvailability.DOWNLOADING) {
-            OnDeviceDownloadProgress(
-                downloaded = onDeviceModelState.bytesDownloaded,
-                total = onDeviceModelState.bytesToDownload,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+
+
+        when (onDeviceModelState.availability) {
+
+            OnDeviceAvailability.DOWNLOADING -> {
+                OnDeviceDownloadProgress(
+                    downloaded = onDeviceModelState.bytesDownloaded,
+                    total = onDeviceModelState.bytesToDownload,
+                    onCancel = viewModel::cancelModelDownload,
+
+                    modifier = Modifier.padding(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
+                    )
+                )
+            }
+
+            OnDeviceAvailability.DOWNLOAD_FAILED,  -> {
+
+                    Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Model download failed",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    Text(
+                        text = onDeviceModelState.errorMessage
+                            ?: "Unable to download Gemma 3 1B.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    TextButton(
+                        onClick = viewModel::retryModelDownload
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        Text("Retry Download")
+                    }
+                }
+            }
+
+            else -> Unit
         }
+
+
+
 
         LazyColumn(
             state = listState,
@@ -549,6 +604,7 @@ private fun OnDeviceDownloadProgress(
     downloaded: Long,
     total: Long?,
     modifier: Modifier = Modifier,
+    onCancel: () -> Unit,
 ) {
     val progress = total
         ?.takeIf { it > 0 }
@@ -580,6 +636,24 @@ private fun OnDeviceDownloadProgress(
             LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+        Text(
+            text = "You can cancel the download at any time.",
+            style = MaterialTheme.typography.bodySmall
+        )
+
+        TextButton(
+            onClick = onCancel,
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = null
+            )
+
+            Spacer(Modifier.width(8.dp))
+
+            Text("Cancel Download")
         }
     }
 }

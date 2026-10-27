@@ -7,6 +7,9 @@ import com.google.firebase.ai.type.RequestTimeoutException
 import com.google.firebase.ai.type.ServiceConnectionHandshakeFailedException
 import com.google.firebase.ai.type.ServiceDisabledException
 import java.io.IOException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 sealed interface AiError {
     data object Network : AiError
@@ -130,4 +133,24 @@ fun AiError.toDisplayMessage(): String = when (this) {
     is AiError.OnDeviceInferenceFailed ->
         "On-device AI could not generate a response. Please try again."
 
+}
+
+ fun downloadErrorMessage(
+    exception: Exception
+): String = when (exception) {
+
+    is UnknownHostException ->
+        "No internet connection. Connect to Wi-Fi or mobile data and retry."
+
+    is SocketTimeoutException ->
+        "The download timed out. Check your connection and retry."
+
+    is SocketException ->
+        "The network connection was interrupted. Please retry."
+
+    is IOException ->
+        "Unable to download the model. Check your connection and try again."
+
+    else ->
+        "Model download failed. Please try again."
 }
