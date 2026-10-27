@@ -155,8 +155,12 @@ class AiRepository(private val firebaseEngine: FirebaseGeminiAIEngine, private v
 
         }.catch { e ->
             if (e is CancellationException) throw e
-            val error = if (e is AiProviderException) e.error else null
-            emit(AiResult.Failure(error ?: AiError.Unknown(e.message.orEmpty())))
+            val error = when (e) {
+                is AiProviderException -> e.error
+                is Exception -> e.toAiError()
+                else -> AiError.Unknown(e.message)
+            }
+            emit(AiResult.Failure(error))
 
         }
 
