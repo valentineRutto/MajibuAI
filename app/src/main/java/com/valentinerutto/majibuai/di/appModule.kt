@@ -37,7 +37,7 @@ val appModule = module {
 
 
 
-    viewModel { MajibuViewModel(get()) }
+    viewModel { MajibuViewModel(get(), get()) }
 
     single {
         RetrofitClient.provideOPenRouterAIOkHttpClient()

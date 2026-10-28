@@ -11,10 +11,14 @@ import com.valentinerutto.majibuai.data.ai.models.ChatMessage
 import com.valentinerutto.majibuai.data.ai.models.ChatRole
 import com.valentinerutto.majibuai.data.ai.models.OnDeviceAvailability
 import com.valentinerutto.majibuai.data.ai.models.toAiError
+import com.valentinerutto.majibuai.util.NetworkMonitor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
@@ -38,7 +42,8 @@ data class SavedQuestion(
 )
 
 class MajibuViewModel(
-    private val repository: AiRepository
+    private val repository: AiRepository,
+    networkMonitor: NetworkMonitor
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AskUiState())
@@ -49,6 +54,14 @@ class MajibuViewModel(
     private var streamingJob: Job? = null
 
     val onDeviceModelState = repository.onDeviceModelState
+
+    val isOnline: StateFlow<Boolean> =
+        networkMonitor.observeConnectivity()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = networkMonitor.isOnline()
+            )
     private var modelPreparationJob: Job? = null
     private var providerSelectionVersion = 0
     init {

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -92,6 +93,7 @@ fun AskScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
     val savedQuestions by viewModel.savedQuestions.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -162,6 +164,7 @@ fun AskScreen(
     ) {
         AskTopBar(
             selectedProvider = uiState.selectedProvider,
+            isOnline = isOnline,
             onProviderSelected = viewModel::selectProvider,
         )
 
@@ -352,6 +355,7 @@ fun AskScreen(
 @Composable
 private fun AskTopBar(
     selectedProvider: AiProvider,
+    isOnline: Boolean,
     onProviderSelected: (AiProvider) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -379,6 +383,23 @@ private fun AskTopBar(
                 color = TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = if (isOnline) Icons.Filled.Wifi else Icons.Filled.WifiOff,
+                contentDescription = null,
+                tint = if (isOnline) MintDark else MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = if (isOnline) "Online" else "Offline",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isOnline) MintDark else MaterialTheme.colorScheme.error,
             )
         }
 
