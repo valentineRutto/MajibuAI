@@ -2,6 +2,14 @@
 ## Ask. Understand. Remember.
 An AI-powered conference and study companion that helps you understand unfamiliar concepts, capture questions, and organize knowledge for later.
 
+## Language and technologies
+
+- **Language:** Kotlin
+- **UI:** Jetpack Compose and Material 3
+- **Architecture:** MVVM with Kotlin Coroutines and Flow
+- **Dependency injection:** Koin
+- **AI:** Firebase AI Logic, OpenRouter, and on-device LiteRT-LM
+
 ## App demo
 
 ![MajibuAI app demo](assets/majibuai-demo.gif)
