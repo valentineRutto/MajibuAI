@@ -14,6 +14,34 @@ An AI-powered conference and study companion that helps you understand unfamilia
 
 ![MajibuAI app demo](assets/majibuai-demo.gif)
 
+## Project structure
+
+```text
+MajibuAI/
+├── app/
+│   └── src/
+│       ├── main/
+│       │   ├── java/com/valentinerutto/majibuai/
+│       │   │   ├── data/ai/          # Repository, provider engines, and AI models
+│       │   │   ├── di/               # Koin dependency-injection module
+│       │   │   ├── navigation/       # Compose navigation and bottom bar
+│       │   │   ├── network/          # Retrofit and OkHttp setup
+│       │   │   ├── ui/               # ViewModel, screens, and theme
+│       │   │   ├── util/             # Provider, network, and app constants
+│       │   │   ├── MainActivity.kt
+│       │   │   └── MajibuApp.kt
+│       │   └── res/                  # App icons, images, fonts, and themes
+│       ├── test/                     # Local unit tests
+│       └── androidTest/              # Instrumented Android tests
+├── assets/                           # README demo media
+├── docs/                             # Setup guide and codelab
+├── gradle/
+│   └── libs.versions.toml            # Central dependency versions and aliases
+├── build.gradle.kts
+├── settings.gradle.kts
+└── README.md
+```
+
 ## Architecture
 
 MajibuAI keeps the chat UI independent from the AI provider APIs. The Ask screen sends user actions to a shared ViewModel, which passes the conversation and selected provider to the repository. The repository routes requests to the provider engine and returns streamed results and typed errors through a common flow.
