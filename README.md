@@ -1,6 +1,37 @@
 # Majibu AI 
-## Ask. Understand. Remember.
-An AI-powered conference and study companion that helps you understand unfamiliar concepts, capture questions, and organize knowledge for later.
+ ## One assistant. Multiple AI engines. Online or offline.
+
+MajibuAI is a native Android hybrid AI assistant built with Kotlin and Jetpack Compose. It explores how cloud-based and on-device language models can work together to deliver a flexible AI experience across different connectivity conditions.
+
+The application integrates Google Gemini, OpenRouter, and on-device Gemma through a shared AI architecture, with streaming responses, provider selection, and fallback between available inference engines.
+
+Rather than depending on a single AI provider, MajibuAI demonstrates how Android applications can orchestrate multiple AI models and make AI experiences more adaptable to the device and network environment.
+
+ ## Why MajibuAI?
+
+Cloud AI offers access to powerful models, but it depends on network connectivity and remote services. On-device AI offers local inference and greater independence from connectivity, but introduces constraints around model size, memory, and device performance.
+
+MajibuAI explores the engineering challenges of bringing these approaches together in one Android application.
+
+ ## Features
+
+Multiple AI providers: Integrates Gemini through Firebase AI Logic, OpenRouter, and local Gemma.
+
+Hybrid inference: Supports cloud and on-device execution, including fallback between providers.
+
+On-device AI: Runs Gemma 3 1B using LiteRT-LM.
+
+Streaming responses: Uses Kotlin Flow to deliver generated response chunks incrementally.
+
+Network awareness: Monitors connectivity to inform hybrid inference decisions.
+
+Model management: Downloads and initializes the on-device model when needed.
+
+Provider selection: Allows users to select an AI execution option.
+
+Response library: Save useful questions and answers for later access during the app session.
+
+
 
 ## Language and technologies
 
@@ -13,6 +44,8 @@ An AI-powered conference and study companion that helps you understand unfamilia
 ## App demo
 
 ![MajibuAI app demo](assets/majibuai-demo.gif)
+
+
 
 ## Project structure
 
